@@ -1,0 +1,19 @@
+{
+  "mustUse": [
+    "TypeScript for type safety",
+    "TypeScript strict mode"
+  ],
+  "mustNotUse": [],
+  "preferences": [],
+  "testing": {
+    "required": true,
+    "strategy": "Unit and integration tests"
+  },
+  "fileOrganization": [
+    "All source code in src/ directory"
+  ],
+  "documentation": {
+    "required": true,
+    "style": "Markdown"
+  }
+}

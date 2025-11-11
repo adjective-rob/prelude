@@ -1,0 +1,73 @@
+{
+  "directories": [
+    {
+      "path": "bin",
+      "fileCount": 1
+    },
+    {
+      "path": "dist",
+      "fileCount": 2
+    },
+    {
+      "path": "dist/bin",
+      "fileCount": 4
+    },
+    {
+      "path": "dist/src",
+      "fileCount": 8
+    },
+    {
+      "path": "dist/src/commands",
+      "fileCount": 20
+    },
+    {
+      "path": "dist/src/core",
+      "fileCount": 16
+    },
+    {
+      "path": "dist/src/schema",
+      "fileCount": 28,
+      "purpose": "Data schemas"
+    },
+    {
+      "path": "dist/src/utils",
+      "fileCount": 12,
+      "purpose": "Utility functions"
+    },
+    {
+      "path": "src",
+      "fileCount": 5
+    },
+    {
+      "path": "src/commands",
+      "fileCount": 5
+    },
+    {
+      "path": "src/core",
+      "fileCount": 4
+    },
+    {
+      "path": "src/schema",
+      "fileCount": 7,
+      "purpose": "Data schemas"
+    },
+    {
+      "path": "src/utils",
+      "fileCount": 3,
+      "purpose": "Utility functions"
+    },
+    {
+      "path": "tests",
+      "fileCount": 1,
+      "purpose": "Tests"
+    }
+  ],
+  "type": "cli",
+  "patterns": [
+    "Utility modules"
+  ],
+  "conventions": [
+    "TypeScript strict mode"
+  ],
+  "entryPoints": []
+}

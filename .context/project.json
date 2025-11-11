@@ -1,0 +1,13 @@
+{
+  "name": "prelude",
+  "description": "The open standard for expressing and maintaining machine-readable context about a codebase",
+  "version": "0.1.0",
+  "createdAt": "2025-11-11T19:00:39.595Z",
+  "updatedAt": "2025-11-11T19:00:39.595Z",
+  "license": "MIT",
+  "team": [
+    {
+      "name": "Rob Hocking <rob@useadjective.com>"
+    }
+  ]
+}

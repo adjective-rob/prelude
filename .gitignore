@@ -1,0 +1,18 @@
+# Node
+node_modules/
+dist/
+*.log
+.DS_Store
+
+# Env files
+.env
+.env.local
+
+# Coverage
+coverage/
+
+# Prelude context (generated files)
+.context/export.md
+.context/*.session.json
+.context/*.seal.json
+.context/.watchlog.json
