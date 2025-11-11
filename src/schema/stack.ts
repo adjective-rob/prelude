@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
+const PRELUDE_VERSION = "1.0.0";
+const SCHEMA_URL = "https://adjective.us/prelude/schemas/v1";
+
 export const StackSchema = z.object({
+  $schema: z.string().url().default(`${SCHEMA_URL}/stack.json`),
+  version: z.string().default(PRELUDE_VERSION),
   language: z.string(),
   runtime: z.string().optional(),
   packageManager: z.enum(['npm', 'pnpm', 'yarn', 'bun', 'pip', 'poetry', 'cargo', 'go']).optional(),

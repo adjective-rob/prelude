@@ -124,7 +124,7 @@ All JSON files SHOULD include:
 
 ```json
 {
-  "$schema": "https://prelude.dev/schemas/v1/[filename].json",
+  "$schema": "https://adjective.us/prelude/schemas/v1/[filename].schema.json",
   "version": "1.0.0",
   ...
 }
@@ -157,13 +157,13 @@ All JSON files SHOULD include:
 
 ```json
 {
-  "$schema": "https://prelude.dev/schemas/v1/project.json",
+  "$schema": "https://adjective.us/prelude/schemas/v1/project.schema.json",
   "version": "1.0.0",
   "name": "my-app",
   "description": "A modern web application",
   "createdAt": "2025-01-01T00:00:00Z",
   "updatedAt": "2025-01-15T12:00:00Z",
-  "version": "2.1.0",
+  "projectVersion": "2.1.0",
   "repository": "https://github.com/org/my-app",
   "license": "MIT",
   "team": [
@@ -203,7 +203,7 @@ All JSON files SHOULD include:
 
 ```json
 {
-  "$schema": "https://prelude.dev/schemas/v1/stack.json",
+  "$schema": "https://adjective.us/prelude/schemas/v1/stack.schema.json",
   "version": "1.0.0",
   "language": "TypeScript/JavaScript",
   "runtime": "Node.js 20.x",
@@ -243,7 +243,7 @@ All JSON files SHOULD include:
 
 ```json
 {
-  "$schema": "https://prelude.dev/schemas/v1/architecture.json",
+  "$schema": "https://adjective.us/prelude/schemas/v1/architecture.schema.json",
   "version": "1.0.0",
   "type": "monorepo",
   "routing": "file-based",
@@ -299,7 +299,7 @@ All JSON files SHOULD include:
 
 ```json
 {
-  "$schema": "https://prelude.dev/schemas/v1/constraints.json",
+  "$schema": "https://adjective.us/prelude/schemas/v1/constraints.schema.json",
   "version": "1.0.0",
   "mustUse": [
     "TypeScript for type safety",
@@ -342,7 +342,7 @@ All JSON files SHOULD include:
 
 ```json
 {
-  "$schema": "https://prelude.dev/schemas/v1/decisions.json",
+  "$schema": "https://adjective.us/prelude/schemas/v1/decisions.schema.json",
   "version": "1.0.0",
   "decisions": [
     {
@@ -367,7 +367,7 @@ All JSON files SHOULD include:
 
 ```json
 {
-  "$schema": "https://prelude.dev/schemas/v1/decisions.json",
+  "$schema": "https://adjective.us/prelude/schemas/v1/decisions.schema.json",
   "version": "1.0.0",
   "decisions": [
     {
@@ -400,7 +400,7 @@ All JSON files SHOULD include:
 
 ```json
 {
-  "$schema": "https://prelude.dev/schemas/v1/session.json",
+  "$schema": "https://adjective.us/prelude/schemas/v1/session.schema.json",
   "version": "1.0.0",
   "sessions": [
     {
@@ -470,7 +470,7 @@ All JSON files SHOULD include:
 
 ```json
 {
-  "$schema": "https://prelude.dev/schemas/v1/export.json",
+  "$schema": "https://adjective.us/prelude/schemas/v1/export.schema.json",
   "version": "1.0.0",
   "generatedAt": "ISO 8601 datetime",
   "project": { ... },
@@ -493,13 +493,13 @@ All JSON files MUST validate against their respective JSON Schema definitions.
 
 Schemas are published at:
 ```
-https://prelude.dev/schemas/v1/project.json
-https://prelude.dev/schemas/v1/stack.json
-https://prelude.dev/schemas/v1/architecture.json
-https://prelude.dev/schemas/v1/constraints.json
-https://prelude.dev/schemas/v1/decisions.json
-https://prelude.dev/schemas/v1/session.json
-https://prelude.dev/schemas/v1/export.json
+https://adjective.us/prelude/schemas/v1/project.schema.json
+https://adjective.us/prelude/schemas/v1/stack.schema.json
+https://adjective.us/prelude/schemas/v1/architecture.schema.json
+https://adjective.us/prelude/schemas/v1/constraints.schema.json
+https://adjective.us/prelude/schemas/v1/decisions.schema.json
+https://adjective.us/prelude/schemas/v1/session.schema.json
+https://adjective.us/prelude/schemas/v1/export.schema.json
 ```
 
 ### 5.2 Validation

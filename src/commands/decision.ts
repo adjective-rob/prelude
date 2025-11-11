@@ -6,6 +6,10 @@ import { getCurrentTimestamp, generateId } from '../utils/time.js';
 import { CONTEXT_DIR, CONTEXT_FILES } from '../constants.js';
 import type { Decision, Decisions } from '../schema/index.js';
 
+// Add these constants
+const PRELUDE_VERSION = "1.0.0";
+const SCHEMA_URL = "https://prelude.dev/schemas/v1";
+
 export function registerDecisionCommand(cli: CAC) {
   cli
     .command('decision <title>', 'Log an architectural decision')
@@ -40,7 +44,12 @@ export function registerDecisionCommand(cli: CAC) {
       logger.decision(`Recording decision: ${title}`);
       
       // Read existing decisions
-      let decisions: Decisions = { decisions: [] };
+      // MODIFIED LINE: Add default $schema and version to the initial object
+      let decisions: Decisions = { 
+        $schema: `${SCHEMA_URL}/decisions.json`,
+        version: PRELUDE_VERSION,
+        decisions: [] 
+      };
       if (await fileExists(decisionsPath)) {
         decisions = await readJSON<Decisions>(decisionsPath);
       }

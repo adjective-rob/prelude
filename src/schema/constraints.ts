@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
+const PRELUDE_VERSION = "1.0.0";
+const SCHEMA_URL = "https://adjective.us/prelude/schemas/v1";
+
 export const ConstraintsSchema = z.object({
+  $schema: z.string().url().default(`${SCHEMA_URL}/constraints.json`),
+  version: z.string().default(PRELUDE_VERSION),
   mustUse: z.array(z.string()).optional(),
   mustNotUse: z.array(z.string()).optional(),
   preferences: z.array(z.object({

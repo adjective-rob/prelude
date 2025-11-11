@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+const PRELUDE_VERSION = "1.0.0";
+const SCHEMA_URL = "https://adjective.us/prelude/schemas/v1";
+
 export const SessionEntrySchema = z.object({
   id: z.string(),
   timestamp: z.string().datetime(),
@@ -20,6 +23,8 @@ export const SessionSchema = z.object({
 });
 
 export const SessionsSchema = z.object({
+  $schema: z.string().url().default(`${SCHEMA_URL}/session.json`),
+  version: z.string().default(PRELUDE_VERSION),
   sessions: z.array(SessionSchema)
 });
 

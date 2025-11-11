@@ -1,4 +1,6 @@
 {
+  "$schema": "https://adjective.us/prelude/schemas/v1/constraints.schema.json",
+  "version": "1.0.0",
   "mustUse": [
     "TypeScript for type safety",
     "TypeScript strict mode"

@@ -1,4 +1,6 @@
 {
+  "$schema": "https://adjective.us/prelude/schemas/v1/architecture.schema.json",
+  "version": "1.0.0",
   "directories": [
     {
       "path": "bin",
@@ -33,6 +35,11 @@
       "path": "dist/src/utils",
       "fileCount": 12,
       "purpose": "Utility functions"
+    },
+    {
+      "path": "schemas",
+      "fileCount": 7,
+      "purpose": "Data schemas"
     },
     {
       "path": "src",

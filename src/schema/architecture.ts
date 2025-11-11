@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
+const PRELUDE_VERSION = "1.0.0";
+const SCHEMA_URL = "https://adjective.us/prelude/schemas/v1";
+
 export const ArchitectureSchema = z.object({
+  $schema: z.string().url().default(`${SCHEMA_URL}/architecture.json`),
+  version: z.string().default(PRELUDE_VERSION),
   type: z.enum(['monolith', 'monorepo', 'microservices', 'library', 'cli', 'fullstack', 'backend', 'frontend']).optional(),
   directories: z.array(z.object({
     path: z.string(),

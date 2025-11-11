@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://adjective.us/prelude/schemas/v1/session.schema.json",
+  "title": "Prelude Session Schema",
+  "description": "Schema for Prelude session.json file containing AI/LLM interaction logs",
+  "type": "object",
+  "required": ["sessions"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URI of the JSON Schema for this file",
+      "format": "uri"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of Prelude format",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "sessions": {
+      "type": "array",
+      "description": "List of AI interaction sessions",
+      "items": {
+        "type": "object",
+        "required": ["sessionId", "startedAt", "entries"],
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Unique session identifier"
+          },
+          "startedAt": {
+            "type": "string",
+            "description": "ISO 8601 datetime when session started",
+            "format": "date-time"
+          },
+          "endedAt": {
+            "type": "string",
+            "description": "ISO 8601 datetime when session ended",
+            "format": "date-time"
+          },
+          "entries": {
+            "type": "array",
+            "description": "Session interaction entries",
+            "items": {
+              "type": "object",
+              "required": ["id", "timestamp", "type", "summary"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique entry identifier"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "description": "ISO 8601 datetime of entry",
+                  "format": "date-time"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["prompt", "decision", "refactor", "debug", "planning", "review"],
+                  "description": "Type of interaction"
+                },
+                "summary": {
+                  "type": "string",
+                  "description": "Brief summary of interaction",
+                  "minLength": 1
+                },
+                "input": {
+                  "type": "string",
+                  "description": "Input prompt or query"
+                },
+                "output": {
+                  "type": "string",
+                  "description": "Output or response"
+                },
+                "filesAffected": {
+                  "type": "array",
+                  "description": "Files affected by this interaction",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": ["success", "partial", "failed", "pending"],
+                  "description": "Outcome of interaction"
+                },
+                "tags": {
+                  "type": "array",
+                  "description": "Tags for categorization",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,9 +1,11 @@
 {
+  "$schema": "https://adjective.us/prelude/schemas/v1/project.schema.json",
+  "version": "1.0.0",
   "name": "prelude",
   "description": "The open standard for expressing and maintaining machine-readable context about a codebase",
-  "version": "0.1.0",
-  "createdAt": "2025-11-11T19:00:39.595Z",
-  "updatedAt": "2025-11-11T19:00:39.595Z",
+  "projectVersion": "0.1.0",
+  "createdAt": "2025-11-11T21:52:18.237Z",
+  "updatedAt": "2025-11-11T21:52:18.238Z",
   "license": "MIT",
   "team": [
     {

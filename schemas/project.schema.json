@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://adjective.us/prelude/schemas/v1/project.schema.json",
+  "title": "Prelude Project Schema",
+  "description": "Schema for Prelude project.json file containing project metadata",
+  "type": "object",
+  "required": ["name", "description", "createdAt", "updatedAt"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URI of the JSON Schema for this file",
+      "format": "uri"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of Prelude format",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Project name",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief project description"
+    },
+    "createdAt": {
+      "type": "string",
+      "description": "ISO 8601 datetime when project was created",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "description": "ISO 8601 datetime when project was last updated",
+      "format": "date-time"
+    },
+    "projectVersion": {
+      "type": "string",
+      "description": "Project version"
+    },
+    "repository": {
+      "type": "string",
+      "description": "Repository URL",
+      "format": "uri"
+    },
+    "license": {
+      "type": "string",
+      "description": "License identifier (e.g., MIT, Apache-2.0)"
+    },
+    "homepage": {
+      "type": "string",
+      "description": "Project homepage URL",
+      "format": "uri"
+    },
+    "team": {
+      "type": "array",
+      "description": "Team members",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Team member name"
+          },
+          "role": {
+            "type": "string",
+            "description": "Team member role"
+          },
+          "email": {
+            "type": "string",
+            "description": "Team member email",
+            "format": "email"
+          }
+        }
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "description": "Project deliverables",
+      "items": {
+        "type": "string"
+      }
+    },
+    "goals": {
+      "type": "array",
+      "description": "Project objectives",
+      "items": {
+        "type": "string"
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "description": "High-level project constraints",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

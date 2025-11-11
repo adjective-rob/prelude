@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+const PRELUDE_VERSION = "1.0.0";
+const SCHEMA_URL = "https://adjective.us/prelude/schemas/v1";
+
 export const DecisionSchema = z.object({
   id: z.string(),
   timestamp: z.string().datetime(),
@@ -16,6 +19,8 @@ export const DecisionSchema = z.object({
 });
 
 export const DecisionsSchema = z.object({
+  $schema: z.string().url().default(`${SCHEMA_URL}/decisions.json`),
+  version: z.string().default(PRELUDE_VERSION),
   decisions: z.array(DecisionSchema)
 });
 

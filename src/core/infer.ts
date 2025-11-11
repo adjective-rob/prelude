@@ -4,6 +4,11 @@ import { fileExists, readJSON, getDirectoryTree } from '../utils/fs.js';
 import { getCurrentTimestamp } from '../utils/time.js';
 import type { Project, Stack, Architecture, Constraints } from '../schema/index.js';
 
+// --- ADD THESE CONSTANTS ---
+const PRELUDE_VERSION = "1.0.0";
+const SCHEMA_URL = "https://adjective.us/prelude/schemas/v1";
+// --------------------------
+
 interface PackageInfo {
   location: string;
   name: string;
@@ -138,7 +143,7 @@ export async function inferProjectMetadata(rootDir: string): Promise<Project> {
   }
   
   const name = projectData.name || basename(rootDir);
-  const version = projectData.version;
+  const projectVersion = projectData.version; // Use the renamed field
   const repository = projectData.repository?.url || projectData.repository;
   const license = projectData.license;
   const homepage = projectData.homepage;
@@ -157,9 +162,11 @@ export async function inferProjectMetadata(rootDir: string): Promise<Project> {
   }
   
   return {
+    $schema: `${SCHEMA_URL}/project.schema.json`,
+    version: PRELUDE_VERSION,
     name,
     description,
-    version,
+    projectVersion, // Correctly use renamed field
     createdAt: getCurrentTimestamp(),
     updatedAt: getCurrentTimestamp(),
     repository,
@@ -170,7 +177,13 @@ export async function inferProjectMetadata(rootDir: string): Promise<Project> {
 }
 
 export async function inferStack(rootDir: string): Promise<Stack> {
-  const stack: Partial<Stack> = {};
+  // --- MODIFIED INITIALIZATION ---
+  const stack: Partial<Stack> = {
+    $schema: `${SCHEMA_URL}/stack.schema.json`,
+    version: PRELUDE_VERSION,
+    // We must set language to a default, as it's required in the schema
+    language: 'unknown' 
+  };
   
   // Check for Node.js project
   const packageJsonPath = join(rootDir, 'package.json');
@@ -205,6 +218,7 @@ export async function inferStack(rootDir: string): Promise<Stack> {
                        await fileExists(join(rootDir, 'nx.json')) ||
                        pkg.workspaces;
     
+    // --- THIS IS THE CRITICAL FIX ---
     let allDeps: Record<string, string> = {};
     
     if (isMonorepo) {
@@ -214,6 +228,7 @@ export async function inferStack(rootDir: string): Promise<Stack> {
     } else {
       allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
     }
+    // ---------------------------------
     
     stack.dependencies = pkg.dependencies || {};
     stack.devDependencies = pkg.devDependencies || {};
@@ -414,7 +429,7 @@ export async function inferStack(rootDir: string): Promise<Stack> {
     else if (await fileExists(join(rootDir, 'railway.json'))) stack.deployment = 'Railway';
     else if (await fileExists(join(rootDir, 'fly.toml'))) stack.deployment = 'Fly.io';
     else if (await fileExists(join(rootDir, 'render.yaml'))) stack.deployment = 'Render';
-    else if (allDeps['@aws-sdk/client-s3']) stack.deployment = 'AWS';
+    else if (allDeps['@aws-sdk/client-s3']) stack.deployment = 'AWS'; // This now works
   }
   
   // Check for Python project
@@ -458,7 +473,10 @@ export async function inferStack(rootDir: string): Promise<Stack> {
 }
 
 export async function inferArchitecture(rootDir: string): Promise<Architecture> {
+  // --- MODIFIED INITIALIZATION ---
   const architecture: Partial<Architecture> = {
+    $schema: `${SCHEMA_URL}/architecture.schema.json`,
+    version: PRELUDE_VERSION,
     directories: []
   };
   
@@ -623,7 +641,10 @@ export async function inferArchitecture(rootDir: string): Promise<Architecture> 
 }
 
 export async function inferConstraints(rootDir: string): Promise<Constraints> {
+  // --- MODIFIED INITIALIZATION ---
   const constraints: Partial<Constraints> = {
+    $schema: `${SCHEMA_URL}/constraints.schema.json`,
+    version: PRELUDE_VERSION,
     mustUse: [],
     mustNotUse: [],
     preferences: []

@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://adjective.us/prelude/schemas/v1/stack.schema.json",
+  "title": "Prelude Stack Schema",
+  "description": "Schema for Prelude stack.json file containing technology stack information",
+  "type": "object",
+  "required": ["language"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URI of the JSON Schema for this file",
+      "format": "uri"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of Prelude format",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "language": {
+      "type": "string",
+      "description": "Primary programming language"
+    },
+    "runtime": {
+      "type": "string",
+      "description": "Runtime environment (e.g., Node.js 20.x)"
+    },
+    "packageManager": {
+      "type": "string",
+      "enum": ["npm", "pnpm", "yarn", "bun", "pip", "poetry", "cargo", "go"],
+      "description": "Package manager used"
+    },
+    "framework": {
+      "type": "string",
+      "description": "Primary framework"
+    },
+    "frameworks": {
+      "type": "array",
+      "description": "All frameworks used",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "description": "Production dependencies",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "devDependencies": {
+      "type": "object",
+      "description": "Development dependencies",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "buildTools": {
+      "type": "array",
+      "description": "Build and bundler tools",
+      "items": {
+        "type": "string"
+      }
+    },
+    "testingFrameworks": {
+      "type": "array",
+      "description": "Testing frameworks",
+      "items": {
+        "type": "string"
+      }
+    },
+    "styling": {
+      "type": "array",
+      "description": "Styling solutions",
+      "items": {
+        "type": "string"
+      }
+    },
+    "database": {
+      "type": "string",
+      "description": "Database(s) used"
+    },
+    "orm": {
+      "type": "string",
+      "description": "ORM or query builder"
+    },
+    "stateManagement": {
+      "type": "string",
+      "description": "State management solution"
+    },
+    "deployment": {
+      "type": "string",
+      "description": "Deployment platform"
+    },
+    "cicd": {
+      "type": "array",
+      "description": "CI/CD tools",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}
