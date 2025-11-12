@@ -1,91 +1,354 @@
 # Prelude
 
-> The open standard for expressing and maintaining **machine-readable context** about a codebase.
+**The open standard for machine-readable codebase context.**
 
-Prelude provides a structured `.context/` directory format that enables **AI tools, agents, and human teams** to reason with continuity, precision, and shared understanding.
+Prelude transforms your codebase into structured, AI-optimized context that makes working with LLMs 10x more effective.
 
-The vision is that every serious project will eventually have a `.context/` directory, just as it has a `package.json` or `.git/` folder.
+[![npm version](https://badge.fury.io/js/prelude-context.svg)](https://www.npmjs.com/package/prelude-context)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
------
+---
 
-## Product Philosophy
+## Why Prelude?
 
-| Pillar | Description |
-| :--- | :--- |
-| **Context is the Runtime** | Developers and AI agents require structured memory, and Prelude provides the universal format. |
-| **Format Over Tooling** | Prelude is primarily a spec. The core value and moat are in the adoption of the `.context/` format itself. |
-| **Local-First, Open by Design** | Runs entirely offline to support robust, offline-first LLM workflows. |
-| **Agent-Native** | Every file is designed to be easily parsed, evaluated, or mutated by software agents. |
+Every time you start a new conversation with an AI assistant, you're forced to explain:
+- What stack you're using
+- How your codebase is organized  
+- What patterns and constraints you follow
+- What decisions have been made
 
------
+**Prelude solves this.**
 
-## The `.context/` Standard
+Instead of repeating yourself, run `prelude export` and get a comprehensive, AI-optimized context document that captures:
 
-The `.context/` folder contains modular, parseable files representing high-signal context:
-
-| File | Description |
-| :--- | :--- |
-| **`project.json`** | Defines project purpose, team roles, major constraints, and final outputs. |
-| **`stack.json`** | Auto-detected tools, frameworks, dependencies (e.g., Node.js, React, Vitest). |
-| **`architecture.json`** | Describes the directory map, key flows, naming patterns, and API style (REST/GraphQL/tRPC). |
-| **`constraints.json`** | Explicit rules, "must-use" declarations, code style (ESLint/Prettier), and testing strategy. |
-| **`decisions.json`** | A timestamped log of architectural tradeoffs and their rationales (ADRs). |
-| **`export.md / .json`** | The final AI-optimized, compressed summary of all context files, ready for prompting. |
-| **`changelog.md`** | Human- or AI-generated history of the codebase. |
-| **`session.json`** | (Optional) Logs recent AI interactions or planning traces. |
-
------
+- ✅ Your technology stack
+- ✅ Project architecture and patterns
+- ✅ Development constraints and preferences
+- ✅ Key decisions and their rationale
+- ✅ Recent changes and work sessions
 
 ## Quick Start
 
-Use the CLI to start managing your project context.
-
 ```bash
-# Install dependencies
-pnpm install
+# Install globally
+npm install -g prelude-context
 
-# 1. Initialize Prelude in your project
-# Scaffolds .context/ and infers initial metadata (project, stack, architecture, constraints)
-pnpm prelude init
+# Initialize in your project
+cd your-project
+prelude init
 
-# 2. Log a decision
-# Record an important architectural choice with a rationale
-pnpm prelude decision "Adopted CAC for CLI" --rationale "It's lightweight and modern"
-
-# 3. Export context for LLM consumption
-# Generates the final, combined .context/export.md file
-pnpm prelude export
-
-# 4. Copy directly to clipboard
-# Reads the export.md and copies to clipboard for easy pasting into an AI chat
-pnpm prelude share
+# Generate AI-optimized context
+prelude export
 ```
 
-### All Commands
+The export is automatically copied to your clipboard - just paste it into Claude, ChatGPT, or any LLM!
 
-| Command | Purpose | Options |
-| :--- | :--- | :--- |
-| `prelude init` | **Scaffold** `.context/` with inferred metadata. | `--force` to overwrite existing directory. |
-| `prelude export` | Generate LLM-optimized context export. | `--format <md\|json>` (default: `md`). |
-| `prelude decision` | Log a timestamped architectural decision. | `--rationale <text>`, `--alternatives <items>`, `--impact <text>`, `--status <status>`. |
-| `prelude watch` | **Track changes** in codebase files (`src/`, `package.json`, etc.) and automatically update context files. | `--once` to run updates once and exit. |
-| `prelude share` | Quick copy of the `export.md` content to clipboard with a preview. | `--format <md\|json>` (default: `md`). |
+---
 
------
+## Example Output
 
-## Project Details
+Here's what Prelude generates for a Next.js monorepo:
 
-  - **Language:** TypeScript (Node.js, ESM)
-  - **Package Manager:** `pnpm`
-  - **CLI Framework:** `cac`
-  - **Schema Validation:** `zod` for runtime validation and type-safe data structures.
-  - **File Watcher:** `chokidar` for efficient change detection.
-  - **Testing:** `vitest`.
+```markdown
+# Project Context
+> Generated by Prelude
 
-  ## Specification
+## 📋 Project Overview
+**Name:** lucem-monorepo
+**Description:** Universal operating system for verified work
+**Version:** 1.0.0
 
-See [SPEC.md](./SPEC.md) for the complete Prelude format specification.
+## 🔧 Technology Stack
+**Language:** TypeScript/JavaScript
+**Runtime:** Node.js >=18.0.0
+**Package Manager:** pnpm
+**Frameworks:** Next.js, React
+**Database:** Supabase, PostgreSQL
+**ORM:** Drizzle ORM
 
-### License
+## 🏗️ Architecture
+**Type:** monorepo
+**Patterns:** Component-based architecture, Server Components
+**Key Directories:**
+- apps/web - Next.js application
+- packages/db - Database schemas and migrations
 
-This project is licensed under the **MIT License**.
+## ⚠️ Constraints & Preferences
+**Must Use:**
+- Turborepo for monorepo management
+- TypeScript strict mode
+- Server Components by default
+```
+
+[See full example →](./examples/nextjs-monorepo)
+
+---
+
+## What Makes Prelude Different?
+
+| Feature | Prelude | Manual Context | Other Tools |
+|---------|---------|----------------|-------------|
+| Automatic inference | ✅ | ❌ | ⚠️ |
+| Standards-based | ✅ | ❌ | ❌ |
+| Human-readable | ✅ | ✅ | ❌ |
+| Machine-optimized | ✅ | ❌ | ✅ |
+| Version controlled | ✅ | ⚠️ | ❌ |
+| Zero configuration | ✅ | N/A | ❌ |
+
+---
+
+## Core Commands
+
+### `prelude init`
+Analyzes your codebase and creates a `.context/` directory with:
+- `project.json` - Project metadata
+- `stack.json` - Technology stack
+- `architecture.json` - Architecture patterns and structure
+- `constraints.json` - Development rules and preferences
+- `decisions.json` - Architecture decision records
+- `changelog.md` - Project timeline
+
+All files follow the [Prelude specification](./SPEC.md) and include JSON Schema validation.
+
+### `prelude export`
+Generates a markdown document optimized for LLMs:
+- Combines all context into a single, focused document
+- Automatically copied to clipboard
+- Perfect for starting new AI conversations
+
+### `prelude decision <title>`
+Logs architecture decisions:
+```bash
+prelude decision "Use Drizzle ORM instead of Prisma"
+# Opens editor for you to document the decision and rationale
+```
+
+### `prelude watch`
+Tracks development sessions:
+```bash
+prelude watch
+# Monitors file changes and logs your work session
+# Press Ctrl+C when done to save the session
+```
+
+---
+
+## Use Cases
+
+### 🎯 Starting New Conversations
+Paste your Prelude export to instantly give any LLM full context:
+
+```
+Here's my project context:
+
+[paste prelude export]
+
+I want to add user authentication. What's the best approach given our stack?
+```
+
+### 🐛 Debugging
+```
+Here's my project context:
+
+[paste prelude export]
+
+I'm seeing this error: [error]
+In file: apps/web/app/api/route.ts
+
+What's likely causing this?
+```
+
+### 🏗️ Architecture Decisions
+```
+Here's my project context:
+
+[paste prelude export]
+
+Should I use Server Actions or API routes for [feature]?
+Consider our existing patterns and constraints.
+```
+
+### 📚 Onboarding
+Share your `.context/` directory with new team members so they can:
+- Understand the stack instantly
+- Learn architectural patterns
+- See past decisions and rationale
+
+---
+
+## The Prelude Format
+
+Prelude is an **open standard** - not just a CLI tool. The format is:
+- **Versioned** - Semantic versioning for safe evolution
+- **Validated** - JSON Schema for every file type
+- **Extensible** - Add custom fields as needed
+- **Language-agnostic** - Implement in any language
+
+See the [full specification →](./SPEC.md)
+
+All schemas are hosted at: `https://adjective.us/prelude/schemas/v1/`
+
+---
+
+## Advanced Usage
+
+### Manual Edits
+The `.context/` files are human-readable JSON. Edit them directly:
+
+```json
+{
+  "$schema": "https://adjective.us/prelude/schemas/v1/constraints.json",
+  "version": "1.0.0",
+  "mustUse": [
+    "TypeScript strict mode",
+    "Server Components by default"
+  ],
+  "preferences": [
+    {
+      "category": "state-management",
+      "preference": "Prefer URL state over client state",
+      "rationale": "Improves sharability and reduces bugs"
+    }
+  ]
+}
+```
+
+### Custom Fields
+Add project-specific fields - the schemas allow additional properties:
+
+```json
+{
+  "$schema": "https://adjective.us/prelude/schemas/v1/project.json",
+  "version": "1.0.0",
+  "name": "my-app",
+  "customField": "your data",
+  "team": [
+    { "name": "Alice", "role": "Tech Lead" }
+  ]
+}
+```
+
+### Integration
+Use Prelude in your tools:
+
+```typescript
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Read project context
+const project = JSON.parse(
+  readFileSync(join(process.cwd(), '.context/project.json'), 'utf-8')
+);
+
+console.log(`Project: ${project.name}`);
+console.log(`Stack: ${project.stack?.language}`);
+```
+
+---
+
+## Requirements
+
+- Node.js >= 18.0.0
+- Git (optional, for tracking changes)
+
+---
+
+## Project Structure
+
+```
+your-project/
+├── .context/              # Created by Prelude
+│   ├── project.json      # Project metadata
+│   ├── stack.json        # Technology stack  
+│   ├── architecture.json # Architecture patterns
+│   ├── constraints.json  # Development rules
+│   ├── decisions.json    # Architecture decisions
+│   └── changelog.md      # Project timeline
+├── .gitignore            # Add .context/*.session.json
+└── ...
+```
+
+**Note:** Commit `.context/` to version control (except `*.session.json` files).
+
+---
+
+## FAQ
+
+### Should I commit `.context/` to git?
+**Yes!** The context is part of your project documentation. Exception: `.context/*.session.json` should be gitignored (it's for local work tracking).
+
+### How often should I update the context?
+Prelude auto-updates timestamps. Run `prelude export` whenever you need fresh context for an AI conversation. Update the JSON files manually when you make architectural changes.
+
+### Can I use this with any LLM?
+Yes! The export format is optimized for Claude, ChatGPT, Gemini, and any text-based AI assistant.
+
+### What if my project structure is unusual?
+Prelude's inference is smart but not perfect. Just edit the `.context/` files directly - they're human-readable JSON.
+
+### Does this work with non-JavaScript projects?
+Yes! While the CLI is built with Node.js, the Prelude format works with any language. The inference currently focuses on JavaScript/TypeScript but the format is universal.
+
+---
+
+## Roadmap
+
+- [ ] Improved inference for Python, Rust, Go
+- [ ] VS Code extension for inline context
+- [ ] GitHub Action for automated updates
+- [ ] Plugin system for custom inference
+- [ ] CLI validation command
+- [ ] Context diff tool
+
+Want to contribute? See [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+---
+
+## Design Principles
+
+1. **Human-readable first** - All files are readable JSON/Markdown
+2. **AI-optimized** - Structured for maximum LLM effectiveness  
+3. **Standards-based** - Open spec, not proprietary format
+4. **Zero lock-in** - Edit files manually, use any tool
+5. **Incremental adoption** - Works with partial information
+
+---
+
+## Examples
+
+- [Next.js Monorepo](./examples/nextjs-monorepo) - Turborepo + Drizzle + Supabase
+- [Express API](./examples/express-api) - REST API with PostgreSQL
+- [Vite React App](./examples/vite-react) - Frontend SPA
+
+---
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
+
+Areas we'd love help with:
+- Improved inference patterns
+- Support for more languages/frameworks  
+- Example projects
+- Documentation improvements
+- Bug reports and feature requests
+
+---
+
+## License
+
+MIT © [Adjective](https://adjective.us)
+
+---
+
+## Links
+
+- [Specification](./SPEC.md)
+- [Schema Documentation](./schemas/README.md)
+- [Examples](./examples/)
+- [NPM Package](https://www.npmjs.com/package/prelude-context)
+- [Issues & Feature Requests](https://github.com/adjective-rob/prelude/issues)
+
+---
+
+**Built by [Adjective](https://adjective.us) - Sovereign Software for AI-Native Teams**

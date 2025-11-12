@@ -1,14 +1,22 @@
 {
-  "name": "prelude",
-  "version": "0.1.0",
+  "name": "@prelude/cli",
+  "version": "1.0.0",
   "description": "The open standard for expressing and maintaining machine-readable context about a codebase",
   "type": "module",
- "bin": {
+  "bin": {
     "prelude": "./dist/bin/prelude.js"
   },
+  "files": [
+    "dist/**/*",
+    "schemas/**/*",
+    "README.md",
+    "SPEC.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "tsx watch bin/prelude.ts",
     "build": "tsc",
+    "prepublishOnly": "pnpm build",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "lint": "eslint . --ext .ts",
@@ -20,9 +28,20 @@
     "ai",
     "agents",
     "llm",
-    "codebase"
+    "codebase",
+    "prelude",
+    "machine-readable",
+    "developer-tools"
   ],
   "author": "Rob Hocking <rob@useadjective.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adjective-rob/prelude.git"
+  },
+  "homepage": "https://github.com/adjective-rob/prelude#readme",
+  "bugs": {
+    "url": "https://github.com/adjective-rob/prelude/issues"
+  },
   "license": "MIT",
   "dependencies": {
     "cac": "^6.7.14",
@@ -31,9 +50,6 @@
     "log-symbols": "^6.0.0",
     "zod": "^3.23.8"
   },
-  "optionalDependencies": {
-    "clipboardy": "^4.0.0"
-  },
   "devDependencies": {
     "@types/node": "^20.14.0",
     "eslint": "^9.5.0",
@@ -41,5 +57,8 @@
     "tsx": "^4.15.7",
     "typescript": "^5.5.2",
     "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
