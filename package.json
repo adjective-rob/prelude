@@ -1,5 +1,5 @@
 {
-  "name": "@prelude/cli",
+  "name": "prelude-context",
   "version": "1.0.0",
   "description": "The open standard for expressing and maintaining machine-readable context about a codebase",
   "type": "module",

@@ -2,6 +2,7 @@
   "$schema": "https://adjective.us/prelude/schemas/v1/stack.schema.json",
   "version": "1.0.0",
   "language": "TypeScript/JavaScript",
+  "runtime": "Node.js >=18.0.0",
   "packageManager": "pnpm",
   "dependencies": {
     "cac": "^6.7.14",

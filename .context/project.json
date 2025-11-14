@@ -1,12 +1,14 @@
 {
   "$schema": "https://adjective.us/prelude/schemas/v1/project.schema.json",
   "version": "1.0.0",
-  "name": "prelude",
+  "name": "prelude-context",
   "description": "The open standard for expressing and maintaining machine-readable context about a codebase",
-  "projectVersion": "0.1.0",
-  "createdAt": "2025-11-12T02:11:46.402Z",
-  "updatedAt": "2025-11-12T02:11:46.402Z",
+  "projectVersion": "1.0.0",
+  "createdAt": "2025-11-14T23:50:39.961Z",
+  "updatedAt": "2025-11-14T23:50:39.961Z",
+  "repository": "https://github.com/adjective-rob/prelude.git",
   "license": "MIT",
+  "homepage": "https://github.com/adjective-rob/prelude#readme",
   "team": [
     {
       "name": "Rob Hocking <rob@useadjective.com>"
