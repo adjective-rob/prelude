@@ -53,11 +53,15 @@ export class ContextMerger {
       }
     }
 
-    // Always preserve certain fields
+    // Always preserve certain fields (only if they actually exist)
     const preserveFields = ['team', 'goals'];
     for (const field of preserveFields) {
       const existingValue = existing[field as keyof Project];
-      if (existingValue !== undefined && existingValue !== null) {
+      const inferredValue = inferred[field as keyof Project];
+      
+      // Only preserve if it exists in existing AND is different from inferred
+      if (existingValue !== undefined && existingValue !== null && 
+          JSON.stringify(existingValue) !== JSON.stringify(inferredValue)) {
         (merged as any)[field] = existingValue;
         
         changes.push({

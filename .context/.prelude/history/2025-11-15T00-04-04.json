@@ -1,0 +1,359 @@
+{
+  "version": "1.0.0",
+  "initialized": "2025-11-15T00:02:36.981Z",
+  "lastUpdate": "2025-11-15T00:02:36.992Z",
+  "files": [
+    {
+      "file": "project.json",
+      "lastUpdated": "2025-11-15T00:02:36.992Z",
+      "fields": {
+        "$schema": {
+          "value": "https://adjective.us/prelude/schemas/v1/project.schema.json",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "d35229c2d410c3f6"
+        },
+        "version": {
+          "value": "1.0.0",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "39fe4a40977d0585"
+        },
+        "name": {
+          "value": "prelude-context",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "f7540c38a8a54265"
+        },
+        "description": {
+          "value": "The open standard for expressing and maintaining machine-readable context about a codebase",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "c8c7f34c24e1cbc5"
+        },
+        "projectVersion": {
+          "value": "1.0.0",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "39fe4a40977d0585"
+        },
+        "createdAt": {
+          "value": "2025-11-15T00:02:36.983Z",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "ba4d0b28d7206731"
+        },
+        "updatedAt": {
+          "value": "2025-11-15T00:02:36.990Z",
+          "source": "manual",
+          "lastModified": "2025-11-15T00:02:36.992Z"
+        },
+        "repository": {
+          "value": "https://github.com/adjective-rob/prelude.git",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "22340138319a8450"
+        },
+        "license": {
+          "value": "MIT",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "529fc91e3f97d3b2"
+        },
+        "homepage": {
+          "value": "https://github.com/adjective-rob/prelude#readme",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "1cea0cfbf4a706a0"
+        },
+        "team": {
+          "value": [
+            {
+              "name": "Rob Hocking <rob@useadjective.com>"
+            }
+          ],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "cc75d3b127e610b7"
+        }
+      }
+    },
+    {
+      "file": "stack.json",
+      "lastUpdated": "2025-11-15T00:02:36.992Z",
+      "fields": {
+        "$schema": {
+          "value": "https://adjective.us/prelude/schemas/v1/stack.schema.json",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "adef633ba50f2bc7"
+        },
+        "version": {
+          "value": "1.0.0",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "39fe4a40977d0585"
+        },
+        "language": {
+          "value": "TypeScript/JavaScript",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "97f1ab7620025b5f"
+        },
+        "runtime": {
+          "value": "Node.js >=18.0.0",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "172a03a25a0dee74"
+        },
+        "packageManager": {
+          "value": "pnpm",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "fe4c98e05b16d76a"
+        },
+        "dependencies": {
+          "value": {
+            "cac": "^6.7.14",
+            "chokidar": "^3.6.0",
+            "colorette": "^2.0.20",
+            "log-symbols": "^6.0.0",
+            "zod": "^3.23.8"
+          },
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "f1bddb8911f78364"
+        },
+        "devDependencies": {
+          "value": {
+            "@types/node": "^20.14.0",
+            "eslint": "^9.5.0",
+            "prettier": "^3.3.2",
+            "tsx": "^4.15.7",
+            "typescript": "^5.5.2",
+            "vitest": "^1.6.0"
+          },
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "95088e8d631014af"
+        },
+        "frameworks": {
+          "value": [],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "4f53cda18c2baa0c"
+        },
+        "buildTools": {
+          "value": [],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "4f53cda18c2baa0c"
+        },
+        "testingFrameworks": {
+          "value": [
+            "Vitest"
+          ],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "16233b4d39a0cf90"
+        },
+        "styling": {
+          "value": [],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "4f53cda18c2baa0c"
+        },
+        "cicd": {
+          "value": [],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "4f53cda18c2baa0c"
+        }
+      }
+    },
+    {
+      "file": "architecture.json",
+      "lastUpdated": "2025-11-15T00:02:36.992Z",
+      "fields": {
+        "$schema": {
+          "value": "https://adjective.us/prelude/schemas/v1/architecture.schema.json",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "ca3684f77d69c5e6"
+        },
+        "version": {
+          "value": "1.0.0",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "39fe4a40977d0585"
+        },
+        "directories": {
+          "value": [
+            {
+              "path": "bin",
+              "fileCount": 1
+            },
+            {
+              "path": "dist",
+              "fileCount": 2
+            },
+            {
+              "path": "dist/bin",
+              "fileCount": 4
+            },
+            {
+              "path": "dist/src",
+              "fileCount": 8
+            },
+            {
+              "path": "dist/src/commands",
+              "fileCount": 20
+            },
+            {
+              "path": "dist/src/core",
+              "fileCount": 16
+            },
+            {
+              "path": "dist/src/schema",
+              "fileCount": 28,
+              "purpose": "Data schemas"
+            },
+            {
+              "path": "dist/src/utils",
+              "fileCount": 12,
+              "purpose": "Utility functions"
+            },
+            {
+              "path": "schemas",
+              "fileCount": 7,
+              "purpose": "Data schemas"
+            },
+            {
+              "path": "src",
+              "fileCount": 5
+            },
+            {
+              "path": "src/commands",
+              "fileCount": 6
+            },
+            {
+              "path": "src/core",
+              "fileCount": 6
+            },
+            {
+              "path": "src/schema",
+              "fileCount": 8,
+              "purpose": "Data schemas"
+            },
+            {
+              "path": "src/utils",
+              "fileCount": 3,
+              "purpose": "Utility functions"
+            },
+            {
+              "path": "tests",
+              "fileCount": 1,
+              "purpose": "Tests"
+            }
+          ],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "5ba33df4b87e6ddc"
+        },
+        "type": {
+          "value": "cli",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "a11227468aefe839"
+        },
+        "patterns": {
+          "value": [
+            "Utility modules"
+          ],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "f2ba994c7ff6a474"
+        },
+        "conventions": {
+          "value": [
+            "TypeScript strict mode"
+          ],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "68d4821bf7e37c5e"
+        },
+        "entryPoints": {
+          "value": [],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "4f53cda18c2baa0c"
+        }
+      }
+    },
+    {
+      "file": "constraints.json",
+      "lastUpdated": "2025-11-15T00:02:36.992Z",
+      "fields": {
+        "$schema": {
+          "value": "https://adjective.us/prelude/schemas/v1/constraints.schema.json",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "9cb17803d3eb061a"
+        },
+        "version": {
+          "value": "1.0.0",
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "39fe4a40977d0585"
+        },
+        "mustUse": {
+          "value": [
+            "TypeScript for type safety",
+            "TypeScript strict mode"
+          ],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "85c055c81dd21ec6"
+        },
+        "mustNotUse": {
+          "value": [],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "4f53cda18c2baa0c"
+        },
+        "preferences": {
+          "value": [],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "4f53cda18c2baa0c"
+        },
+        "testing": {
+          "value": {
+            "required": true,
+            "strategy": "Unit and integration tests"
+          },
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "e8b174ba94d84b42"
+        },
+        "fileOrganization": {
+          "value": [
+            "All source code in src/ directory"
+          ],
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "044bd45eb51a969a"
+        },
+        "documentation": {
+          "value": {
+            "required": true,
+            "style": "Markdown"
+          },
+          "source": "inferred",
+          "lastInferred": "2025-11-15T00:02:36.992Z",
+          "inferredHash": "6ccbaccd75587a3c"
+        }
+      }
+    }
+  ]
+}

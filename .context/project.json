@@ -4,8 +4,8 @@
   "name": "prelude-context",
   "description": "The open standard for expressing and maintaining machine-readable context about a codebase",
   "projectVersion": "1.0.0",
-  "createdAt": "2025-11-14T23:50:39.961Z",
-  "updatedAt": "2025-11-14T23:50:39.961Z",
+  "createdAt": "2025-11-15T00:04:04.183Z",
+  "updatedAt": "2025-11-15T00:04:04.188Z",
   "repository": "https://github.com/adjective-rob/prelude.git",
   "license": "MIT",
   "homepage": "https://github.com/adjective-rob/prelude#readme",
@@ -13,5 +13,9 @@
     {
       "name": "Rob Hocking <rob@useadjective.com>"
     }
+  ],
+  "goals": [
+    "Launch Prelude v1.0",
+    "Get 100 stars on GitHub"
   ]
 }

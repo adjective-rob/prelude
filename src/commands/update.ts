@@ -216,6 +216,9 @@ function trackAllFields(
     const mergedValue = merged[key];
     const inferredValue = inferred[key];
     
+    // Skip undefined values
+    if (mergedValue === undefined) continue;
+    
     // If values are the same, track as inferred
     if (JSON.stringify(mergedValue) === JSON.stringify(inferredValue)) {
       stateManager.trackInferred(file, key, mergedValue);
