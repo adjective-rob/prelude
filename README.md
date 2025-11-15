@@ -94,6 +94,7 @@ Here's what Prelude generates for a Next.js monorepo:
 | Machine-optimized | ✅ | ❌ | ✅ |
 | Version controlled | ✅ | ⚠️ | ❌ |
 | Zero configuration | ✅ | N/A | ❌ |
+| Preserves manual edits | ✅ | ✅ | ❌ |
 
 ---
 
@@ -115,6 +116,25 @@ Generates a markdown document optimized for LLMs:
 - Combines all context into a single, focused document
 - Automatically copied to clipboard
 - Perfect for starting new AI conversations
+
+### `prelude update`
+Re-analyzes your codebase and intelligently updates context:
+```bash
+prelude update
+# Smart merge - preserves manual edits, updates inferred data
+
+prelude update --dry-run
+# Preview changes without applying them
+
+prelude update --force
+# Overwrite everything (except decisions/changelog)
+```
+
+**Key features:**
+- ✅ **Preserves manual edits** - Never loses your customizations
+- ✅ **Shows what changed** - Color-coded diff of updates
+- ✅ **Automatic backups** - Saves history before every update
+- ✅ **Smart merging** - Combines new inferred data with manual edits
 
 ### `prelude decision <title>`
 Logs architecture decisions:
@@ -174,6 +194,17 @@ Share your `.context/` directory with new team members so they can:
 - Learn architectural patterns
 - See past decisions and rationale
 
+### 🔄 Keeping Context Fresh
+```bash
+# After adding dependencies
+npm install @tanstack/react-query
+prelude update
+
+# After restructuring
+prelude update --dry-run  # Preview changes first
+prelude update            # Apply updates
+```
+
 ---
 
 ## The Prelude Format
@@ -212,6 +243,8 @@ The `.context/` files are human-readable JSON. Edit them directly:
   ]
 }
 ```
+
+**Manual edits are preserved** when you run `prelude update` - the smart merge system tracks what's inferred vs. what you've customized.
 
 ### Custom Fields
 Add project-specific fields - the schemas allow additional properties:
@@ -263,7 +296,10 @@ your-project/
 │   ├── architecture.json # Architecture patterns
 │   ├── constraints.json  # Development rules
 │   ├── decisions.json    # Architecture decisions
-│   └── changelog.md      # Project timeline
+│   ├── changelog.md      # Project timeline
+│   └── .prelude/         # State tracking (gitignore *.session.json)
+│       ├── state.json    # Tracks inferred vs manual fields
+│       └── history/      # Automatic backups
 ├── .gitignore            # Add .context/*.session.json
 └── ...
 ```
@@ -278,7 +314,10 @@ your-project/
 **Yes!** The context is part of your project documentation. Exception: `.context/*.session.json` should be gitignored (it's for local work tracking).
 
 ### How often should I update the context?
-Prelude auto-updates timestamps. Run `prelude export` whenever you need fresh context for an AI conversation. Update the JSON files manually when you make architectural changes.
+Run `prelude update` after major changes (new dependencies, restructuring). Run `prelude export` whenever you need fresh context for an AI conversation.
+
+### What happens to my manual edits?
+They're preserved! Prelude tracks which fields are inferred vs. manually edited. When you run `update`, it only changes auto-detected data while keeping your customizations.
 
 ### Can I use this with any LLM?
 Yes! The export format is optimized for Claude, ChatGPT, Gemini, and any text-based AI assistant.
@@ -293,6 +332,7 @@ Yes! While the CLI is built with Node.js, the Prelude format works with any lang
 
 ## Roadmap
 
+- [x] Smart context updates with manual edit preservation
 - [ ] Improved inference for Python, Rust, Go
 - [ ] VS Code extension for inline context
 - [ ] GitHub Action for automated updates
@@ -311,6 +351,7 @@ Want to contribute? See [CONTRIBUTING.md](./CONTRIBUTING.md)
 3. **Standards-based** - Open spec, not proprietary format
 4. **Zero lock-in** - Edit files manually, use any tool
 5. **Incremental adoption** - Works with partial information
+6. **Preserve intent** - Never lose manual customizations
 
 ---
 
