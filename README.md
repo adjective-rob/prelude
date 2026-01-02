@@ -340,8 +340,6 @@ Yes! While the CLI is built with Node.js, the Prelude format works with any lang
 - [ ] CLI validation command
 - [ ] Context diff tool
 
-Want to contribute? See [CONTRIBUTING.md](./CONTRIBUTING.md)
-
 ---
 
 ## Design Principles
@@ -365,8 +363,6 @@ Want to contribute? See [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
-
 Areas we'd love help with:
 - Improved inference patterns
 - Support for more languages/frameworks  
@@ -384,7 +380,7 @@ MIT © [Adjective](https://adjective.us)
 
 ## Links
 
-- [Specification](./SPEC.md)
+- [Specification](https://github.com/adjective-rob/prelude/blob/main/spec.md)
 - [Schema Documentation](./schemas/README.md)
 - [Examples](./examples/)
 - [NPM Package](https://www.npmjs.com/package/prelude-context)
