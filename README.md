@@ -109,7 +109,7 @@ Analyzes your codebase and creates a `.context/` directory with:
 - `decisions.json` - Architecture decision records
 - `changelog.md` - Project timeline
 
-All files follow the [Prelude specification](./SPEC.md) and include JSON Schema validation.
+All files follow the [Prelude specification]([./SPEC.md](https://github.com/adjective-rob/prelude/blob/main/spec.md)) and include JSON Schema validation.
 
 ### `prelude export`
 Generates a markdown document optimized for LLMs:
