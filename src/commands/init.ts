@@ -15,8 +15,17 @@ export function registerInitCommand(cli: CAC) {
     .command('init [dir]', 'Initialize .context/ directory with inferred metadata')
     .option('--force', 'Overwrite existing .context/ directory')
     .action(async (dir: string = process.cwd(), options: { force?: boolean }) => {
-      const rootDir = dir;
-      const contextDir = join(rootDir, CONTEXT_DIR);
+    const rootDir = dir;
+
+    // If PRELUDE_ROOT is set, use it as base for context storage.
+    // Otherwise default to repo-local .context/
+    const externalRoot = process.env.PRELUDE_ROOT;
+    console.log("DEBUG PRELUDE_ROOT:", externalRoot);
+    console.log("RUNTIME PRELUDE_ROOT:", process.env.PRELUDE_ROOT);
+
+const contextDir = externalRoot
+  ? join(externalRoot, rootDir.split('/').pop() as string)
+  : join(rootDir, CONTEXT_DIR);
       
       logger.init('Initializing Prelude context...');
       

@@ -18,7 +18,11 @@ export interface UpdateOptions {
  * Update context by re-analyzing codebase
  */
 export async function update(options: UpdateOptions = {}) {
-  const contextDir = '.context';
+  const externalRoot = process.env.PRELUDE_ROOT;
+
+  const contextDir = externalRoot
+    ? join(externalRoot, process.cwd().split('/').pop() as string)
+    : '.context';
   
   // Check if context exists
   if (!existsSync(contextDir)) {

@@ -16,7 +16,7 @@ export class StateManager {
   private state: PreludeState;
   private contextDir: string;
 
-  constructor(contextDir: string = '.context') {
+  constructor(contextDir: string) {
     this.contextDir = contextDir;
     this.state = this.loadState();
   }

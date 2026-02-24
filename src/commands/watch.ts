@@ -12,7 +12,10 @@ export function registerWatchCommand(cli: CAC) {
     .option('--verbose', 'Show detailed logging')
     .action(async (dir: string = process.cwd(), options: { once?: boolean; verbose?: boolean }) => {
       const rootDir = dir;
-      const contextDir = join(rootDir, CONTEXT_DIR);
+      const externalRoot = process.env.PRELUDE_ROOT;
+      const contextDir = externalRoot
+  ? join(externalRoot, rootDir.split('/').pop() as string)
+  : join(rootDir, CONTEXT_DIR);
       
       // Check if .context exists
       if (!(await fileExists(contextDir))) {
