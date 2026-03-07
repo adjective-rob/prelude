@@ -29,6 +29,7 @@ import { registerExportCommand } from '../src/commands/export.js';
 import { registerShareCommand } from '../src/commands/share.js';
 import { registerDecisionCommand } from '../src/commands/decision.js';
 import { registerWatchCommand } from '../src/commands/watch.js';
+import { registerQueryCommand } from '../src/commands/query.js';
 import { update } from '../src/commands/update.js';
 
 // Register all commands
@@ -37,6 +38,7 @@ registerExportCommand(cli);
 registerShareCommand(cli);
 registerDecisionCommand(cli);
 registerWatchCommand(cli);
+registerQueryCommand(cli);
 
 // Register update command
 cli
