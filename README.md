@@ -143,6 +143,26 @@ prelude decision "Use Drizzle ORM instead of Prisma"
 # Opens editor for you to document the decision and rationale
 ```
 
+### `prelude query <topic> [options]`
+Scoped context lookup — search and filter your project context without exporting everything:
+```bash
+prelude query "error handling"              # topic search across everything
+prelude query --scope src/api/              # architecture + constraints for a directory
+prelude query --type constraints            # just constraints
+prelude query "prisma" --type decisions --format json   # combined filters
+prelude query --type stack --max-tokens 500 # budget-capped output
+```
+
+| Flag | Description |
+|------|-------------|
+| `<topic>` | Deep-search keyword across all context files |
+| `--scope <path>` | Filter to architecture/constraints relevant to a directory |
+| `--type <type>` | Return only one context type: `project`, `stack`, `architecture`, `constraints`, or `decisions` |
+| `--format <md\|json>` | Output format (default: `md`) |
+| `--max-tokens <n>` | Truncate output to fit a token budget |
+
+Output goes to stdout (pipe-friendly), token estimate to stderr. At least one filter (topic, scope, or type) is required.
+
 ### `prelude watch`
 Tracks development sessions:
 ```bash
@@ -186,6 +206,15 @@ Here's my project context:
 
 Should I use Server Actions or API routes for [feature]?
 Consider our existing patterns and constraints.
+```
+
+### 🔍 Scoped Context for AI Agents
+```bash
+# Feed only relevant context to an AI agent working on a specific directory
+prelude query --scope src/api/ --format json | my-agent
+
+# Quick lookup before asking an LLM about a topic
+prelude query "authentication" --max-tokens 500
 ```
 
 ### 📚 Onboarding
@@ -333,6 +362,7 @@ Yes! While the CLI is built with Node.js, the Prelude format works with any lang
 ## Roadmap
 
 - [x] Smart context updates with manual edit preservation
+- [x] Scoped context query engine (`prelude query`)
 - [ ] Improved inference for Python, Rust, Go
 - [ ] VS Code extension for inline context
 - [ ] GitHub Action for automated updates
