@@ -478,6 +478,26 @@ function formatCompactDecisions(data: Record<string, unknown>): string {
   return items.length > 0 ? '[decisions] ' + items.join('; ') : '';
 }
 
+function formatCompactHistory(entries: any[], topic?: string): string {
+  let filtered = entries;
+  if (topic) {
+    const lowerTopic = topic.toLowerCase();
+    filtered = entries.filter(e =>
+      (e.summary || '').toLowerCase().includes(lowerTopic) ||
+      (e.filesAffected || []).some((f: string) => f.toLowerCase().includes(lowerTopic)) ||
+      (e.tags || []).some((t: string) => t.toLowerCase().includes(lowerTopic))
+    );
+  }
+  const recent = filtered.slice(-5);
+  if (recent.length === 0) return '';
+  const parts = recent.map((e: any) => {
+    const files = (e.filesAffected || []).slice(0, 3).join(', ');
+    const filesStr = files ? ` | files: ${files}` : '';
+    return `${e.outcome || 'unknown'}: "${(e.summary || 'no summary').slice(0, 80)}"${filesStr}`;
+  });
+  return `[history] ${parts.join(' ; ')}`;
+}
+
 function formatCompactSection(type: string, data: unknown): string {
   const obj = data as Record<string, unknown>;
   switch (type) {
@@ -530,6 +550,29 @@ export async function exportCompact(
   for (const [type, sectionData] of Object.entries(sections)) {
     const line = formatCompactSection(type, sectionData);
     if (line) lines.push(line);
+  }
+
+  // Load session history
+  const externalRoot = process.env.PRELUDE_ROOT;
+  const contextDir = externalRoot
+    ? join(externalRoot, rootDir.split('/').pop() as string)
+    : join(rootDir, CONTEXT_DIR);
+  const sessionPath = join(contextDir, CONTEXT_FILES.SESSION);
+  let sessionEntries: any[] = [];
+  if (await fileExists(sessionPath)) {
+    try {
+      const sessionData = await readJSON<any>(sessionPath);
+      const sessions = sessionData.sessions || [];
+      if (sessions.length > 0) {
+        sessionEntries = sessions[0].entries || [];
+      }
+    } catch {
+      // Session file malformed — skip silently
+    }
+  }
+  const historyLine = formatCompactHistory(sessionEntries, options.topic);
+  if (historyLine) {
+    lines.push(historyLine);
   }
 
   let output = lines.join('\n');

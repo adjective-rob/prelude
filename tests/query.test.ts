@@ -355,3 +355,80 @@ describe('exportCompact', () => {
     expect(tokenEstimate).toBe(0);
   });
 });
+
+describe('exportCompact session history', () => {
+  it('should include [history] line when session.json exists', async () => {
+    const sessionData = {
+      sessions: [{
+        sessionId: 'test',
+        startedAt: '2026-01-01T00:00:00Z',
+        entries: [
+          {
+            id: 'run-1',
+            timestamp: '2026-01-01T00:00:00Z',
+            type: 'prompt',
+            summary: 'Add error handling to API',
+            filesAffected: ['src/api/index.ts'],
+            outcome: 'failed',
+            tags: ['evolution']
+          },
+          {
+            id: 'run-2',
+            timestamp: '2026-01-02T00:00:00Z',
+            type: 'prompt',
+            summary: 'Add error handling to API',
+            filesAffected: ['src/api/index.ts'],
+            outcome: 'success',
+            tags: ['evolution']
+          }
+        ]
+      }]
+    };
+    await writeFile(join(CONTEXT_DIR, 'session.json'), JSON.stringify(sessionData));
+
+    const { output } = await exportCompact(TEST_DIR, {});
+    expect(output).toContain('[history]');
+    expect(output).toContain('failed');
+    expect(output).toContain('success');
+  });
+
+  it('should filter history by topic', async () => {
+    const sessionData = {
+      sessions: [{
+        sessionId: 'test',
+        startedAt: '2026-01-01T00:00:00Z',
+        entries: [
+          {
+            id: 'run-1',
+            timestamp: '2026-01-01T00:00:00Z',
+            type: 'prompt',
+            summary: 'Add error handling to API',
+            filesAffected: ['src/api/index.ts'],
+            outcome: 'failed',
+            tags: []
+          },
+          {
+            id: 'run-2',
+            timestamp: '2026-01-02T00:00:00Z',
+            type: 'prompt',
+            summary: 'Update database migrations',
+            filesAffected: ['src/models/db.ts'],
+            outcome: 'success',
+            tags: []
+          }
+        ]
+      }]
+    };
+    await writeFile(join(CONTEXT_DIR, 'session.json'), JSON.stringify(sessionData));
+
+    const { output } = await exportCompact(TEST_DIR, { topic: 'error' });
+    expect(output).toContain('[history]');
+    expect(output).toContain('error handling');
+    expect(output).not.toContain('database migrations');
+  });
+
+  it('should not include [history] when no session.json exists', async () => {
+    const { output } = await exportCompact(TEST_DIR, {});
+    expect(output).not.toContain('[history]');
+  });
+});
