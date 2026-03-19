@@ -397,3 +397,147 @@ export async function executeQuery(rootDir: string, options: QueryOptions): Prom
 
   return { output, tokenEstimate };
 }
+
+function formatCompactProject(data: Record<string, unknown>): string {
+  const parts: string[] = [];
+  if (data.name) parts.push(String(data.name));
+  if (data.description) parts.push(String(data.description));
+  if (Array.isArray(data.goals) && data.goals.length > 0) {
+    parts.push('goals: ' + data.goals.join(', '));
+  }
+  return parts.length > 0 ? '[project] ' + parts.join(' | ') : '';
+}
+
+function formatCompactStack(data: Record<string, unknown>): string {
+  const parts: string[] = [];
+  const basics = [data.language, data.runtime].filter(Boolean).join(' ');
+  if (basics) parts.push(basics);
+  if (data.packageManager) parts.push(String(data.packageManager));
+  if (Array.isArray(data.frameworks) && data.frameworks.length > 0) {
+    parts.push(data.frameworks.join(', '));
+  }
+  if (Array.isArray(data.testingFrameworks) && data.testingFrameworks.length > 0) {
+    parts.push('testing: ' + data.testingFrameworks.join(', '));
+  }
+  const dbParts = [data.database, data.orm].filter(Boolean);
+  if (dbParts.length > 0) parts.push('db: ' + dbParts.join('/'));
+  return parts.length > 0 ? '[stack] ' + parts.join(' | ') : '';
+}
+
+function formatCompactArchitecture(data: Record<string, unknown>): string {
+  const parts: string[] = [];
+  if (data.type) parts.push('type=' + String(data.type));
+  if (Array.isArray(data.patterns) && data.patterns.length > 0) {
+    parts.push('patterns: ' + data.patterns.join(', '));
+  }
+  if (Array.isArray(data.entryPoints) && data.entryPoints.length > 0) {
+    const entries = (data.entryPoints as Array<{ file?: string; purpose?: string }>)
+      .map(e => e.file || '')
+      .filter(Boolean);
+    if (entries.length > 0) parts.push('entry: ' + entries.join(', '));
+  }
+  if (Array.isArray(data.directories) && data.directories.length > 0) {
+    const dirs = (data.directories as Array<{ path?: string; purpose?: string }>)
+      .map(d => d.purpose ? `${d.path} (${d.purpose})` : d.path || '')
+      .filter(Boolean);
+    if (dirs.length > 0) parts.push('dirs: ' + dirs.join(', '));
+  }
+  return parts.length > 0 ? '[arch] ' + parts.join(' | ') : '';
+}
+
+function formatCompactConstraints(data: Record<string, unknown>): string {
+  const parts: string[] = [];
+  if (Array.isArray(data.mustUse) && data.mustUse.length > 0) {
+    parts.push('must-use: ' + data.mustUse.join(', '));
+  }
+  if (Array.isArray(data.mustNotUse) && data.mustNotUse.length > 0) {
+    parts.push('must-not: ' + data.mustNotUse.join(', '));
+  }
+  const style = data.codeStyle as Record<string, unknown> | undefined;
+  if (style) {
+    const styleParts = [style.formatter, style.linter].filter(Boolean);
+    if (styleParts.length > 0) parts.push('style: ' + styleParts.join('/'));
+  }
+  const testing = data.testing as Record<string, unknown> | undefined;
+  if (testing) {
+    const testParts: string[] = [];
+    if (testing.strategy) testParts.push(String(testing.strategy));
+    if (testing.coverage) testParts.push('coverage: ' + String(testing.coverage) + '%');
+    if (testParts.length > 0) parts.push('testing: ' + testParts.join(', '));
+  }
+  return parts.length > 0 ? '[constraints] ' + parts.join(' | ') : '';
+}
+
+function formatCompactDecisions(data: Record<string, unknown>): string {
+  const decisions = Array.isArray(data.decisions) ? data.decisions :
+    (Array.isArray(data) ? data : []);
+  if (decisions.length === 0) return '';
+  const items = (decisions as Array<{ title?: string; status?: string }>)
+    .map(d => d.title ? `${d.title} (${d.status || 'unknown'})` : '')
+    .filter(Boolean);
+  return items.length > 0 ? '[decisions] ' + items.join('; ') : '';
+}
+
+function formatCompactSection(type: string, data: unknown): string {
+  const obj = data as Record<string, unknown>;
+  switch (type) {
+    case 'project': return formatCompactProject(obj);
+    case 'stack': return formatCompactStack(obj);
+    case 'architecture': return formatCompactArchitecture(obj);
+    case 'constraints': return formatCompactConstraints(obj);
+    case 'decisions': return formatCompactDecisions(obj);
+    default: return '';
+  }
+}
+
+export async function exportCompact(
+  rootDir: string,
+  options: { topic?: string; scope?: string; maxTokens?: number }
+): Promise<{ output: string; tokenEstimate: number }> {
+  const data = await loadContext(rootDir);
+  const sections: Record<string, unknown> = {};
+  const topic = options.topic?.toLowerCase();
+
+  for (const type of VALID_TYPES) {
+    const raw = data[type];
+    if (!raw) continue;
+
+    let section: unknown;
+
+    if (topic) {
+      const matches = extractMatchingFields(raw as Record<string, unknown>, topic);
+      if (Object.keys(matches).length > 0) {
+        section = matches;
+      }
+    } else {
+      section = raw;
+    }
+
+    if (options.scope && section) {
+      if (type === 'architecture') {
+        section = filterArchitectureByScope(section as Architecture, options.scope);
+      } else if (type === 'constraints') {
+        section = filterConstraintsByScope(section as Constraints, options.scope);
+      }
+    }
+
+    if (section && Object.keys(section as Record<string, unknown>).length > 0) {
+      sections[type] = section;
+    }
+  }
+
+  const lines: string[] = [];
+  for (const [type, sectionData] of Object.entries(sections)) {
+    const line = formatCompactSection(type, sectionData);
+    if (line) lines.push(line);
+  }
+
+  let output = lines.join('\n');
+  const tokenEstimate = estimateTokens(output);
+
+  if (options.maxTokens && tokenEstimate > options.maxTokens) {
+    output = truncateToTokenBudget(output, options.maxTokens);
+  }
+
+  return { output, tokenEstimate };
+}
