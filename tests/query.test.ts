@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdir, writeFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { executeQuery } from '../src/core/query-engine.js';
+import { executeQuery, exportCompact } from '../src/core/query-engine.js';
 
 const TEST_DIR = join(tmpdir(), 'prelude-query-test-' + Date.now());
 const CONTEXT_DIR = join(TEST_DIR, '.context');
@@ -287,5 +287,71 @@ describe('prelude query', () => {
       expect(parsed.stack.version).toBeUndefined();
       expect(parsed.stack.language).toBe('TypeScript');
     });
+  });
+});
+
+describe('exportCompact', () => {
+  it('should return flat string with bracketed section prefixes', async () => {
+    const { output } = await exportCompact(TEST_DIR, {});
+
+    expect(output).toContain('[stack]');
+    expect(output).toContain('[arch]');
+    expect(output).toContain('[constraints]');
+    expect(output).toContain('[project]');
+    expect(output).toContain('[decisions]');
+  });
+
+  it('should NOT contain markdown headers, bold markers, or emoji', async () => {
+    const { output } = await exportCompact(TEST_DIR, {});
+
+    // No markdown headers
+    expect(output).not.toMatch(/^#{1,3}\s/m);
+    // No bold markers
+    expect(output).not.toContain('**');
+    // No emoji (common unicode emoji ranges)
+    expect(output).not.toMatch(/[\u{1F300}-\u{1F9FF}]/u);
+    // No horizontal rule separators
+    expect(output).not.toContain('---');
+  });
+
+  it('should respect topic filtering', async () => {
+    const { output } = await exportCompact(TEST_DIR, { topic: 'error' });
+
+    // Should have some output since fixtures contain "error handling" references
+    expect(output.length).toBeGreaterThan(0);
+    // Should not include stack section (no error-related content there)
+    expect(output).not.toContain('[stack]');
+  });
+
+  it('should respect scope filtering for architecture directories', async () => {
+    const { output } = await exportCompact(TEST_DIR, { scope: 'src/api' });
+
+    // Architecture section should be present but filtered
+    expect(output).toContain('[arch]');
+    // Should contain src/api directories
+    expect(output).toContain('src/api');
+    // Should not contain unrelated directories like src/models
+    expect(output).not.toContain('src/models');
+  });
+
+  it('should respect maxTokens budget', async () => {
+    const { output } = await exportCompact(TEST_DIR, { maxTokens: 10 });
+
+    expect(output).toContain('[... truncated to fit token budget]');
+  });
+
+  it('should return tokenEstimate > 0', async () => {
+    const { tokenEstimate } = await exportCompact(TEST_DIR, {});
+
+    expect(tokenEstimate).toBeGreaterThan(0);
+  });
+
+  it('should return empty string for non-matching topic', async () => {
+    const { output, tokenEstimate } = await exportCompact(TEST_DIR, {
+      topic: 'xyznonexistent',
+    });
+
+    expect(output).toBe('');
+    expect(tokenEstimate).toBe(0);
   });
 });
