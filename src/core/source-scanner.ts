@@ -84,7 +84,7 @@ async function collectSourceFiles(rootDir: string): Promise<string[]> {
   const files: string[] = [];
 
   async function walk(dir: string, depth: number): Promise<void> {
-    if (depth > 5) return;
+    if (depth > 8) return;
 
     let entries;
     try {
