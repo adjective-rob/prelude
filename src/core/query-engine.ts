@@ -239,6 +239,43 @@ function formatArchitectureSection(arch: Partial<Architecture>): string {
       md += `- \`${ep.file}\` - ${ep.purpose}\n`;
     });
   }
+  // Source-level findings
+  const archAny = arch as any;
+  if (archAny.routes?.length) {
+    md += '**Routes:**\n';
+    archAny.routes.forEach((r: any) => {
+      const methods = r.methods ? ` [${r.methods.join(', ')}]` : '';
+      md += `- \`${r.path}\`${methods} → \`${r.file}\`\n`;
+    });
+  }
+  if (archAny.apiEndpoints?.length) {
+    md += '**API Endpoints:**\n';
+    archAny.apiEndpoints.forEach((ep: any) => {
+      md += `- \`${ep.methods.join(', ')} ${ep.path}\` → \`${ep.file}\`\n`;
+    });
+  }
+  if (archAny.middleware?.length) {
+    md += '**Middleware:**\n';
+    archAny.middleware.forEach((m: any) => {
+      const guards = m.guards?.length ? ` (guards: ${m.guards.join(', ')})` : '';
+      md += `- \`${m.file}\` — ${m.type}${guards}\n`;
+    });
+  }
+  if (archAny.reactPatterns) {
+    const rp = archAny.reactPatterns;
+    const parts: string[] = [];
+    if (rp.serverComponents?.length) parts.push(`${rp.serverComponents.length} server components`);
+    if (rp.clientComponents?.length) parts.push(`${rp.clientComponents.length} client components`);
+    if (rp.hooks?.length) parts.push(`${rp.hooks.length} custom hooks`);
+    if (rp.providers?.length) parts.push(`${rp.providers.length} providers`);
+    if (parts.length > 0) md += `**React Patterns:** ${parts.join(', ')}\n`;
+  }
+  if (archAny.keyFiles?.length) {
+    md += '**Key Files:**\n';
+    archAny.keyFiles.forEach((kf: any) => {
+      md += `- \`${kf.file}\` — ${kf.role}\n`;
+    });
+  }
   md += '\n';
   return md;
 }
@@ -441,6 +478,36 @@ function formatCompactArchitecture(data: Record<string, unknown>): string {
       .map(d => d.purpose ? `${d.path} (${d.purpose})` : d.path || '')
       .filter(Boolean);
     if (dirs.length > 0) parts.push('dirs: ' + dirs.join(', '));
+  }
+  // Source-level compact summaries
+  const archAny = data as any;
+  if (archAny.routes?.length) {
+    const routePaths = archAny.routes.map((r: any) => {
+      const methods = r.methods ? `[${r.methods.join(',')}]` : '';
+      return `${r.path}${methods}`;
+    });
+    parts.push('routes: ' + routePaths.join(', '));
+  }
+  if (archAny.apiEndpoints?.length) {
+    const eps = archAny.apiEndpoints.map((ep: any) => `${ep.methods.join(',')} ${ep.path}`);
+    parts.push('api: ' + eps.join(', '));
+  }
+  if (archAny.middleware?.length) {
+    const mw = archAny.middleware.map((m: any) => m.file);
+    parts.push('middleware: ' + mw.join(', '));
+  }
+  if (archAny.reactPatterns) {
+    const rp = archAny.reactPatterns;
+    const rpParts: string[] = [];
+    if (rp.serverComponents?.length) rpParts.push(`${rp.serverComponents.length} server`);
+    if (rp.clientComponents?.length) rpParts.push(`${rp.clientComponents.length} client`);
+    if (rp.hooks?.length) rpParts.push(`${rp.hooks.length} hooks`);
+    if (rp.providers?.length) rpParts.push(`${rp.providers.length} providers`);
+    if (rpParts.length > 0) parts.push('react: ' + rpParts.join(', '));
+  }
+  if (archAny.keyFiles?.length) {
+    const kf = archAny.keyFiles.map((k: any) => `${k.file}(${k.role})`);
+    parts.push('key-files: ' + kf.join(', '));
   }
   return parts.length > 0 ? '[arch] ' + parts.join(' | ') : '';
 }

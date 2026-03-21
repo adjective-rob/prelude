@@ -98,9 +98,70 @@ export async function exportToMarkdown(rootDir: string): Promise<string> {
       markdown += '\n';
     }
     
+    // Source-level findings
+    if ((arch as any).routes && (arch as any).routes.length > 0) {
+      markdown += '**Routes:**\n';
+      (arch as any).routes.forEach((r: any) => {
+        const methods = r.methods ? ` [${r.methods.join(', ')}]` : '';
+        const dynamic = r.isDynamic ? ' (dynamic)' : '';
+        markdown += `- \`${r.path}\`${methods}${dynamic} → \`${r.file}\`\n`;
+      });
+      markdown += '\n';
+    }
+
+    if ((arch as any).apiEndpoints && (arch as any).apiEndpoints.length > 0) {
+      markdown += '**API Endpoints:**\n';
+      (arch as any).apiEndpoints.forEach((ep: any) => {
+        markdown += `- \`${ep.methods.join(', ')} ${ep.path}\` → \`${ep.file}\`\n`;
+      });
+      markdown += '\n';
+    }
+
+    if ((arch as any).middleware && (arch as any).middleware.length > 0) {
+      markdown += '**Middleware:**\n';
+      (arch as any).middleware.forEach((m: any) => {
+        const guards = m.guards && m.guards.length > 0 ? ` (guards: ${m.guards.join(', ')})` : '';
+        markdown += `- \`${m.file}\` — ${m.type}${guards}\n`;
+      });
+      markdown += '\n';
+    }
+
+    if ((arch as any).reactPatterns) {
+      const rp = (arch as any).reactPatterns;
+      const parts: string[] = [];
+      if (rp.serverComponents?.length) parts.push(`${rp.serverComponents.length} server components`);
+      if (rp.clientComponents?.length) parts.push(`${rp.clientComponents.length} client components`);
+      if (rp.serverActions?.length) parts.push(`${rp.serverActions.length} server action files`);
+      if (rp.layouts?.length) parts.push(`${rp.layouts.length} layouts`);
+      if (parts.length > 0) {
+        markdown += `**React Patterns:** ${parts.join(', ')}\n`;
+      }
+      if (rp.hooks?.length) {
+        markdown += '**Custom Hooks:**\n';
+        rp.hooks.forEach((h: any) => {
+          markdown += `- \`${h.file}\`: ${h.hooks.join(', ')}\n`;
+        });
+      }
+      if (rp.providers?.length) {
+        markdown += '**Providers:**\n';
+        rp.providers.forEach((p: any) => {
+          markdown += `- \`${p.file}\`: ${p.name}\n`;
+        });
+      }
+      markdown += '\n';
+    }
+
+    if ((arch as any).keyFiles && (arch as any).keyFiles.length > 0) {
+      markdown += '**Key Files:**\n';
+      (arch as any).keyFiles.forEach((kf: any) => {
+        markdown += `- \`${kf.file}\` — ${kf.role}\n`;
+      });
+      markdown += '\n';
+    }
+
     markdown += '---\n\n';
   }
-  
+
   // Constraints
   const constraintsPath = join(contextDir, CONTEXT_FILES.CONSTRAINTS);
   if (await fileExists(constraintsPath)) {
