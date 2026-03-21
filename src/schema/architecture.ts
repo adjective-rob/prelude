@@ -21,7 +21,53 @@ export const ArchitectureSchema = z.object({
   routing: z.enum(['file-based', 'config-based', 'none']).optional(),
   stateManagement: z.string().optional(),
   apiStyle: z.enum(['REST', 'GraphQL', 'tRPC', 'gRPC', 'mixed', 'none']).optional(),
-  dataFlow: z.string().optional()
+  dataFlow: z.string().optional(),
+
+  // Source-level findings (inferred from actual code, not just config)
+  reactPatterns: z.object({
+    serverComponents: z.array(z.string()).optional(),
+    clientComponents: z.array(z.string()).optional(),
+    serverActions: z.array(z.string()).optional(),
+    hooks: z.array(z.object({
+      file: z.string(),
+      hooks: z.array(z.string())
+    })).optional(),
+    providers: z.array(z.object({
+      file: z.string(),
+      name: z.string(),
+      contextName: z.string().optional()
+    })).optional(),
+    layouts: z.array(z.string()).optional()
+  }).optional(),
+
+  routes: z.array(z.object({
+    file: z.string(),
+    path: z.string(),
+    methods: z.array(z.string()).optional(),
+    isDynamic: z.boolean()
+  })).optional(),
+
+  middleware: z.array(z.object({
+    file: z.string(),
+    type: z.string(),
+    guards: z.array(z.string()).optional()
+  })).optional(),
+
+  apiEndpoints: z.array(z.object({
+    file: z.string(),
+    path: z.string(),
+    methods: z.array(z.string())
+  })).optional(),
+
+  keyFiles: z.array(z.object({
+    file: z.string(),
+    role: z.string()
+  })).optional(),
+
+  importPatterns: z.object({
+    internalAliases: z.array(z.string()).optional(),
+    heavyImporters: z.array(z.string()).optional()
+  }).optional()
 });
 
 export type Architecture = z.infer<typeof ArchitectureSchema>;

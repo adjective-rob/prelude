@@ -92,6 +92,125 @@
     "dataFlow": {
       "type": "string",
       "description": "Data flow description"
+    },
+    "reactPatterns": {
+      "type": "object",
+      "description": "React-specific patterns detected from source code",
+      "properties": {
+        "serverComponents": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Files using 'use server' directive"
+        },
+        "clientComponents": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Files using 'use client' directive"
+        },
+        "serverActions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Files containing server action functions"
+        },
+        "hooks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["file", "hooks"],
+            "properties": {
+              "file": { "type": "string" },
+              "hooks": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "description": "Custom React hooks detected"
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["file", "name"],
+            "properties": {
+              "file": { "type": "string" },
+              "name": { "type": "string" },
+              "contextName": { "type": "string" }
+            }
+          },
+          "description": "React context providers detected"
+        },
+        "layouts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Layout files (Next.js App Router)"
+        }
+      }
+    },
+    "routes": {
+      "type": "array",
+      "description": "Detected route files with URL paths",
+      "items": {
+        "type": "object",
+        "required": ["file", "path", "isDynamic"],
+        "properties": {
+          "file": { "type": "string" },
+          "path": { "type": "string" },
+          "methods": { "type": "array", "items": { "type": "string" } },
+          "isDynamic": { "type": "boolean" }
+        }
+      }
+    },
+    "middleware": {
+      "type": "array",
+      "description": "Middleware files detected",
+      "items": {
+        "type": "object",
+        "required": ["file", "type"],
+        "properties": {
+          "file": { "type": "string" },
+          "type": { "type": "string" },
+          "guards": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "apiEndpoints": {
+      "type": "array",
+      "description": "API route handlers with HTTP methods",
+      "items": {
+        "type": "object",
+        "required": ["file", "path", "methods"],
+        "properties": {
+          "file": { "type": "string" },
+          "path": { "type": "string" },
+          "methods": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "keyFiles": {
+      "type": "array",
+      "description": "Important files with detected roles (db connection, auth config, etc.)",
+      "items": {
+        "type": "object",
+        "required": ["file", "role"],
+        "properties": {
+          "file": { "type": "string" },
+          "role": { "type": "string" }
+        }
+      }
+    },
+    "importPatterns": {
+      "type": "object",
+      "description": "Import graph summary",
+      "properties": {
+        "internalAliases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Path aliases used (e.g., @/, ~/)"
+        },
+        "heavyImporters": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Files with 10+ imports (complexity signals)"
+        }
+      }
     }
   },
   "additionalProperties": true
