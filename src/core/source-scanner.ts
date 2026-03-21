@@ -155,8 +155,8 @@ function inferRoutePath(file: string): string {
   // app/api/users/route.ts → /api/users
   // pages/api/hello.ts → /api/hello
   let routePath = file
-    .replace(/^(src\/)?app\//, '/')
-    .replace(/^(src\/)?pages\//, '/')
+    .replace(/^.*?(?:src\/)?app\//, '/')
+    .replace(/^.*?(?:src\/)?pages\//, '/')
     .replace(/\/(page|route)\.(tsx?|jsx?)$/, '')
     .replace(/\.(tsx?|jsx?)$/, '')
     .replace(/\/index$/, '/');
@@ -221,14 +221,14 @@ function scanReactPatterns(file: string, content: string, result: SourceScanResu
   }
 
   // Layouts (Next.js App Router)
-  if (/^(src\/)?app\//.test(file) && /layout\.(tsx?|jsx?)$/.test(file)) {
+  if (/(?:^|\/)(?:src\/)?app\//.test(file) && /layout\.(tsx?|jsx?)$/.test(file)) {
     result.reactPatterns.layouts.push(file);
   }
 }
 
 function scanRoutes(file: string, content: string, result: SourceScanResult): void {
   // Next.js App Router pages
-  if (/^(src\/)?app\/.*\/page\.(tsx?|jsx?)$/.test(file) || /^(src\/)?app\/page\.(tsx?|jsx?)$/.test(file)) {
+  if (/(?:^|\/)(?:src\/)?app\/.*\/page\.(tsx?|jsx?)$/.test(file) || /(?:^|\/)(?:src\/)?app\/page\.(tsx?|jsx?)$/.test(file)) {
     result.routes.push({
       file,
       path: inferRoutePath(file),
@@ -237,7 +237,7 @@ function scanRoutes(file: string, content: string, result: SourceScanResult): vo
   }
 
   // Next.js App Router route handlers
-  if (/^(src\/)?app\/.*\/route\.(tsx?|jsx?)$/.test(file) || /^(src\/)?app\/route\.(tsx?|jsx?)$/.test(file)) {
+  if (/(?:^|\/)(?:src\/)?app\/.*\/route\.(tsx?|jsx?)$/.test(file) || /(?:^|\/)(?:src\/)?app\/route\.(tsx?|jsx?)$/.test(file)) {
     const methods: string[] = [];
     for (const method of HTTP_METHODS) {
       const re = new RegExp(`export\\s+(?:async\\s+)?function\\s+${method}\\b`);
@@ -250,7 +250,7 @@ function scanRoutes(file: string, content: string, result: SourceScanResult): vo
   }
 
   // Pages Router API routes
-  if (/^(src\/)?pages\/api\//.test(file)) {
+  if (/(?:^|\/)(?:src\/)?pages\/api\//.test(file)) {
     result.apiEndpoints.push({
       file,
       path: inferRoutePath(file),
