@@ -3,6 +3,7 @@ import { join, basename, relative } from 'path';
 import { fileExists, readJSON, getDirectoryTree } from '../utils/fs.js';
 import { getCurrentTimestamp } from '../utils/time.js';
 import type { Project, Stack, Architecture, Constraints } from '../schema/index.js';
+import { scanSources } from './source-scanner.js';
 
 // --- ADD THESE CONSTANTS ---
 const PRELUDE_VERSION = "1.0.0";
@@ -636,7 +637,71 @@ export async function inferArchitecture(rootDir: string): Promise<Architecture> 
   if (await fileExists(join(rootDir, 'src/server.ts'))) entryPoints.push({ file: 'src/server.ts', purpose: 'Server entry' });
   
   architecture.entryPoints = entryPoints;
-  
+
+  // --- Source-level scanning ---
+  try {
+    const scanResult = await scanSources(rootDir);
+
+    // Only include non-empty findings
+    if (scanResult.reactPatterns.serverComponents.length > 0 ||
+        scanResult.reactPatterns.clientComponents.length > 0 ||
+        scanResult.reactPatterns.hooks.length > 0 ||
+        scanResult.reactPatterns.providers.length > 0 ||
+        scanResult.reactPatterns.layouts.length > 0 ||
+        scanResult.reactPatterns.serverActions.length > 0) {
+      const rp: Record<string, unknown> = {};
+      if (scanResult.reactPatterns.serverComponents.length > 0) rp.serverComponents = scanResult.reactPatterns.serverComponents;
+      if (scanResult.reactPatterns.clientComponents.length > 0) rp.clientComponents = scanResult.reactPatterns.clientComponents;
+      if (scanResult.reactPatterns.serverActions.length > 0) rp.serverActions = scanResult.reactPatterns.serverActions;
+      if (scanResult.reactPatterns.hooks.length > 0) rp.hooks = scanResult.reactPatterns.hooks;
+      if (scanResult.reactPatterns.providers.length > 0) rp.providers = scanResult.reactPatterns.providers;
+      if (scanResult.reactPatterns.layouts.length > 0) rp.layouts = scanResult.reactPatterns.layouts;
+      (architecture as any).reactPatterns = rp;
+    }
+
+    if (scanResult.routes.length > 0) {
+      (architecture as any).routes = scanResult.routes;
+    }
+
+    if (scanResult.middleware.length > 0) {
+      (architecture as any).middleware = scanResult.middleware;
+    }
+
+    if (scanResult.apiEndpoints.length > 0) {
+      (architecture as any).apiEndpoints = scanResult.apiEndpoints;
+    }
+
+    if (scanResult.keyFiles.length > 0) {
+      (architecture as any).keyFiles = scanResult.keyFiles;
+    }
+
+    if (scanResult.importPatterns.internalAliases.length > 0 ||
+        scanResult.importPatterns.heavyImporters.length > 0) {
+      const ip: Record<string, unknown> = {};
+      if (scanResult.importPatterns.internalAliases.length > 0) ip.internalAliases = scanResult.importPatterns.internalAliases;
+      if (scanResult.importPatterns.heavyImporters.length > 0) ip.heavyImporters = scanResult.importPatterns.heavyImporters;
+      (architecture as any).importPatterns = ip;
+    }
+
+    // Enrich existing patterns array with source-level findings
+    if (scanResult.reactPatterns.serverComponents.length > 0 ||
+        scanResult.reactPatterns.clientComponents.length > 0) {
+      if (!architecture.patterns) architecture.patterns = [];
+      if (!architecture.patterns.includes('React Server Components')) {
+        architecture.patterns.push('React Server Components');
+      }
+    }
+    if (scanResult.reactPatterns.serverActions.length > 0) {
+      if (!architecture.patterns) architecture.patterns = [];
+      if (!architecture.patterns.includes('Server Actions')) {
+        architecture.patterns.push('Server Actions');
+      }
+    }
+  } catch (error) {
+    // Source scanning is best-effort — don't fail inference if it errors
+    // The architecture result will just lack source-level fields
+  }
+
   return architecture as Architecture;
 }
 
