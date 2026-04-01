@@ -171,24 +171,51 @@ prelude watch
 # Press Ctrl+C when done to save the session
 ```
 
+### `prelude serve`
+Starts Prelude as an MCP server over stdio transport:
+```bash
+prelude serve                    # Serve context for current directory
+prelude serve --root ~/my-project  # Serve context for a specific project
+```
+
+AI tools connect to this server to query your project context programmatically — no clipboard needed.
+
+### `prelude mcp-config`
+Prints the configuration snippet to connect Prelude to your AI tool:
+```bash
+prelude mcp-config --client claude-code      # Default
+prelude mcp-config --client claude-desktop
+prelude mcp-config --client cursor
+```
+
 ---
 
 ## MCP Server Integration
 
-Prelude can run as an MCP (Model Context Protocol) server, making your project context available to AI tools like Claude Code, Claude Desktop, and Cursor.
+Prelude can run as an [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server, making your project context directly available to AI tools like Claude Code, Claude Desktop, and Cursor — no copy-paste required.
 
 ### Quick Setup (Claude Code)
 
 ```bash
-# From your project directory (must have .context/ — run `prelude init` first)
+# From your project directory (must have .context/ — run prelude init first)
 prelude mcp-config --client claude-code
 ```
 
-This prints the command to register Prelude as an MCP server. Your AI tools will then have access to three tools:
+This prints the command to register Prelude as an MCP server. Once connected, your AI tools have access to three tools:
 
-- **prelude_query** — Full-power context queries with topic, scope, and type filtering
-- **prelude_compact** — Token-efficient context for prompt injection (~800 tokens)
-- **prelude_status** — Check which context files are available
+| Tool | Description |
+|------|-------------|
+| `prelude_query` | Full-power context queries with topic, scope, and type filtering |
+| `prelude_compact` | Token-efficient context for prompt injection (~800 tokens) |
+| `prelude_status` | Check which context files are available |
+
+And three resources for passive context discovery:
+
+| Resource URI | Description |
+|-------------|-------------|
+| `prelude://context/full` | Complete project context as markdown |
+| `prelude://context/compact` | Token-efficient summary |
+| `prelude://context/{type}` | Individual context files (project, stack, architecture, constraints, decisions) |
 
 ### Other Clients
 
@@ -197,7 +224,7 @@ prelude mcp-config --client claude-desktop
 prelude mcp-config --client cursor
 ```
 
-### Manual Configuration
+### Manual Setup
 
 Start the server directly:
 
@@ -206,6 +233,17 @@ prelude serve --root /path/to/your/project
 ```
 
 The server uses stdio transport. Configure your MCP client to run this command.
+
+### `prelude mcp-config [options]`
+
+Prints the configuration snippet for connecting Prelude to your AI tool:
+
+```bash
+prelude mcp-config                          # Claude Code (default)
+prelude mcp-config --client claude-desktop   # Claude Desktop
+prelude mcp-config --client cursor           # Cursor
+prelude mcp-config --root /path/to/project   # Specify project root
+```
 
 ---
 
@@ -399,12 +437,14 @@ Yes! While the CLI is built with Node.js, the Prelude format works with any lang
 
 - [x] Smart context updates with manual edit preservation
 - [x] Scoped context query engine (`prelude query`)
+- [x] MCP server for AI tool integration (`prelude serve`)
 - [ ] Improved inference for Python, Rust, Go
 - [ ] VS Code extension for inline context
 - [ ] GitHub Action for automated updates
 - [ ] Plugin system for custom inference
 - [ ] CLI validation command
 - [ ] Context diff tool
+- [ ] Temporal brain layer (learned heuristics from AI tool usage)
 
 ---
 
