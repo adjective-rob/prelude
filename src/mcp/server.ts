@@ -1,4 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { join } from 'path';
 import { executeQuery, VALID_TYPES } from '../core/query-engine.js';
@@ -116,6 +116,90 @@ export function createPreludeServer(rootDir: string): McpServer {
           isError: true,
         };
       }
+    }
+  );
+
+  // --- Resources (passive context) ---
+
+  server.resource(
+    'full-context',
+    'prelude://context/full',
+    async (uri) => {
+      const { exportToMarkdown } = await import('../core/exporter.js');
+      const markdown = await exportToMarkdown(rootDir);
+      return {
+        contents: [{
+          uri: uri.href,
+          mimeType: 'text/markdown',
+          text: markdown,
+        }],
+      };
+    }
+  );
+
+  server.resource(
+    'compact-context',
+    'prelude://context/compact',
+    async (uri) => {
+      const output = await exportCompact(rootDir, { maxTokens: 800 });
+      return {
+        contents: [{
+          uri: uri.href,
+          mimeType: 'text/plain',
+          text: output,
+        }],
+      };
+    }
+  );
+
+  server.resource(
+    'context-by-type',
+    new ResourceTemplate('prelude://context/{type}', { list: undefined }),
+    async (uri, variables) => {
+      const typeStr = variables.type as string;
+      const fileMap: Record<string, string> = {
+        project: CONTEXT_FILES.PROJECT,
+        stack: CONTEXT_FILES.STACK,
+        architecture: CONTEXT_FILES.ARCHITECTURE,
+        constraints: CONTEXT_FILES.CONSTRAINTS,
+        decisions: CONTEXT_FILES.DECISIONS,
+      };
+
+      const filename = fileMap[typeStr];
+      if (!filename) {
+        return {
+          contents: [{
+            uri: uri.href,
+            mimeType: 'text/plain',
+            text: `Unknown context type: ${typeStr}. Valid types: ${Object.keys(fileMap).join(', ')}`,
+          }],
+        };
+      }
+
+      const externalRoot = process.env.PRELUDE_ROOT;
+      const contextDir = externalRoot
+        ? join(externalRoot, rootDir.split('/').pop() as string)
+        : join(rootDir, CONTEXT_DIR);
+
+      const filePath = join(contextDir, filename);
+      if (!(await fileExists(filePath))) {
+        return {
+          contents: [{
+            uri: uri.href,
+            mimeType: 'text/plain',
+            text: `Context file not found: ${filename}. Run \`prelude init\` to generate it.`,
+          }],
+        };
+      }
+
+      const data = await readJSON(filePath);
+      return {
+        contents: [{
+          uri: uri.href,
+          mimeType: 'application/json',
+          text: JSON.stringify(data, null, 2),
+        }],
+      };
     }
   );
 
