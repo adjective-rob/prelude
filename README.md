@@ -173,6 +173,42 @@ prelude watch
 
 ---
 
+## MCP Server Integration
+
+Prelude can run as an MCP (Model Context Protocol) server, making your project context available to AI tools like Claude Code, Claude Desktop, and Cursor.
+
+### Quick Setup (Claude Code)
+
+```bash
+# From your project directory (must have .context/ — run `prelude init` first)
+prelude mcp-config --client claude-code
+```
+
+This prints the command to register Prelude as an MCP server. Your AI tools will then have access to three tools:
+
+- **prelude_query** — Full-power context queries with topic, scope, and type filtering
+- **prelude_compact** — Token-efficient context for prompt injection (~800 tokens)
+- **prelude_status** — Check which context files are available
+
+### Other Clients
+
+```bash
+prelude mcp-config --client claude-desktop
+prelude mcp-config --client cursor
+```
+
+### Manual Configuration
+
+Start the server directly:
+
+```bash
+prelude serve --root /path/to/your/project
+```
+
+The server uses stdio transport. Configure your MCP client to run this command.
+
+---
+
 ## Use Cases
 
 ### 🎯 Starting New Conversations

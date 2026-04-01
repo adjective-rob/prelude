@@ -32,6 +32,7 @@ import { registerWatchCommand } from '../src/commands/watch.js';
 import { registerQueryCommand } from '../src/commands/query.js';
 import { registerCompactCommand } from '../src/commands/compact.js';
 import { registerServeCommand } from '../src/commands/serve.js';
+import { registerMcpConfigCommand } from '../src/commands/mcp-config.js';
 import { update } from '../src/commands/update.js';
 
 // Register all commands
@@ -43,6 +44,7 @@ registerWatchCommand(cli);
 registerQueryCommand(cli);
 registerCompactCommand(cli);
 registerServeCommand(cli);
+registerMcpConfigCommand(cli);
 
 // Register update command
 cli
