@@ -10,7 +10,7 @@ import type { ContextType } from '../core/query-engine.js';
 export function createPreludeServer(rootDir: string): McpServer {
   const server = new McpServer({
     name: 'prelude-context',
-    version: '1.4.3',
+    version: '1.5.0',
   });
 
   server.tool(
