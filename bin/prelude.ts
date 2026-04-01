@@ -31,6 +31,7 @@ import { registerDecisionCommand } from '../src/commands/decision.js';
 import { registerWatchCommand } from '../src/commands/watch.js';
 import { registerQueryCommand } from '../src/commands/query.js';
 import { registerCompactCommand } from '../src/commands/compact.js';
+import { registerServeCommand } from '../src/commands/serve.js';
 import { update } from '../src/commands/update.js';
 
 // Register all commands
@@ -41,6 +42,7 @@ registerDecisionCommand(cli);
 registerWatchCommand(cli);
 registerQueryCommand(cli);
 registerCompactCommand(cli);
+registerServeCommand(cli);
 
 // Register update command
 cli
