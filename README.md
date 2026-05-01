@@ -111,11 +111,43 @@ Analyzes your codebase and creates a `.context/` directory with:
 
 All files follow the [Prelude specification](https://github.com/adjective-rob/prelude/blob/main/spec.md) and include JSON Schema validation.
 
+**Bootstrap from an existing CLAUDE.md:**
+```bash
+prelude init --from-claude-md              # Uses ./CLAUDE.md
+prelude init --from-claude-md docs/AI.md   # Custom path
+```
+
+Prelude parses your CLAUDE.md to extract project info, stack details, architecture, and constraints — then merges that with inference results. Your manual context gets preserved and structured.
+
 ### `prelude export`
 Generates a markdown document optimized for LLMs:
 - Combines all context into a single, focused document
 - Automatically copied to clipboard
 - Perfect for starting new AI conversations
+
+**Export formats:**
+```bash
+prelude export                      # Default markdown export
+prelude export --format claude-md   # Generate a CLAUDE.md file
+prelude export --format cursorrules # Generate a .cursorrules file
+prelude export --format json        # Structured JSON export
+```
+
+The `claude-md` format generates a clean CLAUDE.md from your `.context/` data — Prelude becomes the source of truth that outputs to whatever format your AI tool expects.
+
+### `prelude validate`
+Validates all `.context/` files against their JSON schemas:
+```bash
+prelude validate
+# project.json — valid
+# stack.json — valid
+# architecture.json — valid
+# constraints.json — valid
+# decisions.json — valid
+# All 5 file(s) passed validation.
+```
+
+Useful for CI pipelines to catch schema drift after manual edits. Exits with code 1 if any file fails.
 
 ### `prelude update`
 Re-analyzes your codebase and intelligently updates context:
@@ -244,6 +276,30 @@ prelude mcp-config --client claude-desktop   # Claude Desktop
 prelude mcp-config --client cursor           # Cursor
 prelude mcp-config --root /path/to/project   # Specify project root
 ```
+
+---
+
+## GitHub Action
+
+Prelude ships with a GitHub Action to automatically keep `.context/` files up to date:
+
+```yaml
+# .github/workflows/prelude.yml
+name: Update Context
+on:
+  push:
+    branches: [main]
+    paths: [package.json, pyproject.toml, Cargo.toml, go.mod, "src/**"]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: adjective-rob/prelude@main
+```
+
+The action runs `prelude update` and opens a PR if `.context/` files changed. See [action.yml](./action.yml) for configuration options.
 
 ---
 
@@ -429,7 +485,7 @@ Yes! The export format is optimized for Claude, ChatGPT, Gemini, and any text-ba
 Prelude's inference is smart but not perfect. Just edit the `.context/` files directly - they're human-readable JSON.
 
 ### Does this work with non-JavaScript projects?
-Yes! While the CLI is built with Node.js, the Prelude format works with any language. The inference currently focuses on JavaScript/TypeScript but the format is universal.
+Yes! Prelude has full inference support for **JavaScript/TypeScript**, **Python**, **Rust**, and **Go** — including dependency parsing, framework detection, testing tools, and conventions. The format itself is language-agnostic.
 
 ---
 
@@ -438,11 +494,14 @@ Yes! While the CLI is built with Node.js, the Prelude format works with any lang
 - [x] Smart context updates with manual edit preservation
 - [x] Scoped context query engine (`prelude query`)
 - [x] MCP server for AI tool integration (`prelude serve`)
-- [ ] Improved inference for Python, Rust, Go
+- [x] Full inference for Python (pyproject.toml, requirements.txt)
+- [x] Full inference for Rust (Cargo.toml) and Go (go.mod)
+- [x] CLAUDE.md / .cursorrules export (`prelude export --format claude-md`)
+- [x] Bootstrap from CLAUDE.md (`prelude init --from-claude-md`)
+- [x] Schema validation command (`prelude validate`)
+- [x] GitHub Action for automated updates
 - [ ] VS Code extension for inline context
-- [ ] GitHub Action for automated updates
 - [ ] Plugin system for custom inference
-- [ ] CLI validation command
 - [ ] Context diff tool
 - [ ] Temporal brain layer (learned heuristics from AI tool usage)
 

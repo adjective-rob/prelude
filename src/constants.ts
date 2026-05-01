@@ -54,5 +54,8 @@ export const IGNORE_PATTERNS = [
   '**/venv/**',
   '**/.mypy_cache/**',
   '**/.ruff_cache/**',
-  '**/.pytest_cache/**'
+  '**/.pytest_cache/**',
+  '**/target/debug/**',
+  '**/target/release/**',
+  '**/vendor/**'
 ] as const;

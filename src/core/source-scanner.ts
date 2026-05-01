@@ -61,12 +61,13 @@ export interface KeyFileInfo {
 
 // --- Constants ---
 
-const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.py']);
+const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.py', '.rs', '.go']);
 const MAX_READ_LINES = 100;
 const MAX_READ_BYTES = 4096;
 const SKIP_DIRS = new Set([
   'node_modules', '.next', 'dist', 'build', '.git', '.context', 'coverage', '.turbo',
   '__pycache__', '.venv', 'venv', '.mypy_cache', '.ruff_cache', '.pytest_cache',
+  'target', 'vendor',
 ]);
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const;
 
@@ -463,6 +464,63 @@ function scanPythonPatterns(file: string, content: string, result: SourceScanRes
   }
 }
 
+// --- Rust scanners ---
+
+function scanRustPatterns(file: string, content: string, result: SourceScanResult): void {
+  // Actix/Axum/Rocket route handlers
+  const rustRoutePattern = /#\[(?:get|post|put|patch|delete)\s*\(\s*"([^"]+)"\s*\)\]/gi;
+  let match;
+  while ((match = rustRoutePattern.exec(content)) !== null) {
+    const method = match[0].match(/#\[(\w+)/)?.[1]?.toUpperCase() || 'GET';
+    result.apiEndpoints.push({ file, path: match[1], methods: [method] });
+  }
+
+  // Key files
+  const fileName = basename(file);
+  if (fileName === 'main.rs' && file.includes('src/')) {
+    result.keyFiles.push({ file, role: 'binary entry point' });
+  } else if (fileName === 'lib.rs' && file.includes('src/')) {
+    result.keyFiles.push({ file, role: 'library entry point' });
+  } else if (fileName === 'build.rs') {
+    result.keyFiles.push({ file, role: 'build script' });
+  }
+
+  // Import patterns (heavy use statements)
+  const useLines = content.split('\n').filter(line => /^use\s/.test(line.trimStart()));
+  if (useLines.length >= 10) {
+    result.importPatterns.heavyImporters.push(file);
+  }
+}
+
+// --- Go scanners ---
+
+function scanGoPatterns(file: string, content: string, result: SourceScanResult): void {
+  // Gin/Echo/Chi route handlers
+  const ginPattern = /(?:router|r|g|e)\.(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\(\s*"([^"]+)"/gi;
+  let match;
+  while ((match = ginPattern.exec(content)) !== null) {
+    result.apiEndpoints.push({ file, path: match[2], methods: [match[1].toUpperCase()] });
+  }
+
+  // http.HandleFunc patterns
+  const httpPattern = /http\.HandleFunc\s*\(\s*"([^"]+)"/g;
+  while ((match = httpPattern.exec(content)) !== null) {
+    result.apiEndpoints.push({ file, path: match[1], methods: ['handler'] });
+  }
+
+  // Key files
+  const fileName = basename(file);
+  if (fileName === 'main.go') {
+    result.keyFiles.push({ file, role: 'application entry' });
+  }
+
+  // Import patterns
+  const importLines = content.split('\n').filter(line => /^\s*"/.test(line) || /^import\s/.test(line));
+  if (importLines.length >= 10) {
+    result.importPatterns.heavyImporters.push(file);
+  }
+}
+
 // --- Main export ---
 
 export async function scanSources(rootDir: string): Promise<SourceScanResult> {
@@ -495,6 +553,10 @@ export async function scanSources(rootDir: string): Promise<SourceScanResult> {
       const ext = extname(file);
       if (ext === '.py') {
         scanPythonPatterns(file, content, result);
+      } else if (ext === '.rs') {
+        scanRustPatterns(file, content, result);
+      } else if (ext === '.go') {
+        scanGoPatterns(file, content, result);
       } else {
         scanReactPatterns(file, content, result);
         scanRoutes(file, content, result);

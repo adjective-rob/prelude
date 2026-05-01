@@ -75,11 +75,11 @@ async function copyToClipboard(text: string): Promise<boolean> {
 export function registerExportCommand(cli: CAC) {
   cli
     .command('export [dir]', 'Generate LLM-optimized export')
-    .option('--format <format>', 'Output format (md or json)', { default: 'md' })
+    .option('--format <format>', 'Output format: md, json, claude-md, cursorrules', { default: 'md' })
     .option('--no-copy', 'Skip copying to clipboard')
     .option('--print', 'Print to stdout after export')
-    .action(async (dir: string = process.cwd(), options: { 
-      format: 'md' | 'json';
+    .action(async (dir: string = process.cwd(), options: {
+      format: string;
       copy?: boolean;
       print?: boolean;
     }) => {
@@ -88,23 +88,25 @@ export function registerExportCommand(cli: CAC) {
     const externalRoot = process.env.PRELUDE_ROOT;
 
     const contextDir = externalRoot
-    
+
   ? join(externalRoot, rootDir.split('/').pop() as string)
   : join(rootDir, CONTEXT_DIR);
-      
+
       // Check if .context exists
       if (!(await fileExists(contextDir))) {
         logger.error('.context/ directory not found. Run `prelude init` first.');
         process.exit(1);
       }
-      
+
       logger.export('Exporting context...');
-      
-      const format = options.format === 'json' ? 'json' : 'md';
-      const spin = spinner(`Generating ${format.toUpperCase()} export...`);
+
+      const validFormats = ['md', 'json', 'claude-md', 'cursorrules'];
+      const format = validFormats.includes(options.format) ? options.format : 'md';
+      const formatLabel = format === 'claude-md' ? 'CLAUDE.md' : format === 'cursorrules' ? '.cursorrules' : format.toUpperCase();
+      const spin = spinner(`Generating ${formatLabel} export...`);
       
       try {
-        const exportPath = await saveExport(rootDir, format);
+        const exportPath = await saveExport(rootDir, format as any);
         spin.stop();
         
         logger.success(`✓ Export generated: ${exportPath}`);

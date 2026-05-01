@@ -314,6 +314,45 @@ export async function inferProjectMetadata(rootDir: string): Promise<Project> {
     } catch {}
   }
 
+  // Try Cargo.toml for Rust projects
+  const cargoProjectPath = join(rootDir, 'Cargo.toml');
+  if (await fileExists(cargoProjectPath)) {
+    try {
+      const cargoContent = await readFile(cargoProjectPath, 'utf-8');
+      const cargo = parsePyprojectToml(cargoContent);
+      const pkg = cargo?.package || {};
+
+      if (!name && pkg.name) name = pkg.name;
+      if (!description && pkg.description) description = pkg.description;
+      if (!projectVersion && pkg.version) projectVersion = pkg.version;
+      if (!license && pkg.license) license = pkg.license;
+      if (!repository && pkg.repository) repository = pkg.repository;
+      if (!homepage && pkg.homepage) homepage = pkg.homepage;
+
+      if (team.length === 0 && Array.isArray(pkg.authors)) {
+        for (const author of pkg.authors) {
+          if (typeof author === 'string') {
+            team.push({ name: author.replace(/<.*>/, '').trim() });
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // Try go.mod for Go projects (module name only)
+  const goModProjectPath = join(rootDir, 'go.mod');
+  if (await fileExists(goModProjectPath) && !name) {
+    try {
+      const goModContent = await readFile(goModProjectPath, 'utf-8');
+      const moduleMatch = goModContent.match(/^module\s+(\S+)/m);
+      if (moduleMatch) {
+        // Use the last segment of the module path as name
+        const parts = moduleMatch[1].split('/');
+        name = parts[parts.length - 1];
+      }
+    } catch {}
+  }
+
   // Fall back to directory name for name
   if (!name) name = basename(rootDir);
 
@@ -795,13 +834,217 @@ export async function inferStack(rootDir: string): Promise<Stack> {
   if (await fileExists(cargoPath)) {
     stack.language = 'Rust';
     stack.packageManager = 'cargo';
+
+    try {
+      const cargoContent = await readFile(cargoPath, 'utf-8');
+      const cargo = parsePyprojectToml(cargoContent); // TOML parser works for Cargo.toml too
+
+      // Rust edition as runtime
+      const edition = cargo?.package?.edition;
+      if (edition) {
+        stack.runtime = `Rust Edition ${edition}`;
+      }
+
+      // Collect all deps
+      const cargoDeps = cargo?.dependencies || {};
+      const cargoDevDeps = cargo?.['dev-dependencies'] || {};
+      const cargoBuildDeps = cargo?.['build-dependencies'] || {};
+      const allCrateDeps = new Set([
+        ...Object.keys(cargoDeps).map((s: string) => s.toLowerCase()),
+        ...Object.keys(cargoDevDeps).map((s: string) => s.toLowerCase()),
+        ...Object.keys(cargoBuildDeps).map((s: string) => s.toLowerCase()),
+      ]);
+
+      // Store deps
+      const rustDepsRecord: Record<string, string> = {};
+      for (const [name, spec] of Object.entries(cargoDeps)) {
+        rustDepsRecord[name] = typeof spec === 'string' ? spec : '*';
+      }
+      if (Object.keys(rustDepsRecord).length > 0) stack.dependencies = rustDepsRecord;
+
+      const rustDevDepsRecord: Record<string, string> = {};
+      for (const [name, spec] of Object.entries(cargoDevDeps)) {
+        rustDevDepsRecord[name] = typeof spec === 'string' ? spec : '*';
+      }
+      if (Object.keys(rustDevDepsRecord).length > 0) stack.devDependencies = rustDevDepsRecord;
+
+      // === FRAMEWORKS ===
+      const rustFrameworks: string[] = [];
+      // Web frameworks
+      if (allCrateDeps.has('actix-web')) rustFrameworks.push('Actix Web');
+      if (allCrateDeps.has('axum')) rustFrameworks.push('Axum');
+      if (allCrateDeps.has('rocket')) rustFrameworks.push('Rocket');
+      if (allCrateDeps.has('warp')) rustFrameworks.push('Warp');
+      if (allCrateDeps.has('tide')) rustFrameworks.push('Tide');
+      // Async runtime
+      if (allCrateDeps.has('tokio')) rustFrameworks.push('Tokio');
+      if (allCrateDeps.has('async-std')) rustFrameworks.push('async-std');
+      // CLI
+      if (allCrateDeps.has('clap')) rustFrameworks.push('Clap');
+      if (allCrateDeps.has('structopt')) rustFrameworks.push('StructOpt');
+      // Serialization
+      if (allCrateDeps.has('serde')) rustFrameworks.push('Serde');
+      // GUI
+      if (allCrateDeps.has('tauri')) rustFrameworks.push('Tauri');
+      if (allCrateDeps.has('egui')) rustFrameworks.push('egui');
+      if (allCrateDeps.has('iced')) rustFrameworks.push('Iced');
+
+      if (rustFrameworks.length > 0) {
+        stack.frameworks = rustFrameworks;
+        stack.framework = rustFrameworks[0];
+      }
+
+      // === TESTING ===
+      const rustTesting: string[] = [];
+      if (allCrateDeps.has('criterion')) rustTesting.push('Criterion (benchmarks)');
+      if (allCrateDeps.has('proptest')) rustTesting.push('proptest');
+      if (allCrateDeps.has('quickcheck')) rustTesting.push('quickcheck');
+      if (allCrateDeps.has('mockall')) rustTesting.push('mockall');
+      if (allCrateDeps.has('rstest')) rustTesting.push('rstest');
+      // Rust has built-in testing
+      rustTesting.unshift('cargo test (built-in)');
+      stack.testingFrameworks = rustTesting;
+
+      // === ORM/DATABASE ===
+      if (allCrateDeps.has('diesel')) stack.orm = 'Diesel';
+      else if (allCrateDeps.has('sea-orm') || allCrateDeps.has('sea_orm')) stack.orm = 'SeaORM';
+      else if (allCrateDeps.has('sqlx')) stack.orm = 'SQLx';
+
+      const rustDatabases: string[] = [];
+      if (allCrateDeps.has('tokio-postgres') || allCrateDeps.has('sqlx') || allCrateDeps.has('diesel')) rustDatabases.push('PostgreSQL');
+      if (allCrateDeps.has('mongodb')) rustDatabases.push('MongoDB');
+      if (allCrateDeps.has('redis')) rustDatabases.push('Redis');
+      if (allCrateDeps.has('rusqlite')) rustDatabases.push('SQLite');
+      if (rustDatabases.length > 0) stack.database = rustDatabases.join(', ');
+
+      // === BUILD TOOLS ===
+      const rustBuildTools: string[] = [];
+      if (allCrateDeps.has('maturin')) rustBuildTools.push('Maturin');
+      if (allCrateDeps.has('wasm-bindgen')) rustBuildTools.push('wasm-bindgen');
+      if (allCrateDeps.has('napi') || allCrateDeps.has('napi-derive')) rustBuildTools.push('napi-rs');
+      if (rustBuildTools.length > 0) stack.buildTools = rustBuildTools;
+
+      // === DEPLOYMENT ===
+      if (!stack.deployment) {
+        if (await fileExists(join(rootDir, 'Dockerfile'))) stack.deployment = 'Docker';
+        else if (await fileExists(join(rootDir, 'fly.toml'))) stack.deployment = 'Fly.io';
+        else if (await fileExists(join(rootDir, 'shuttle.toml')) || allCrateDeps.has('shuttle-runtime')) stack.deployment = 'Shuttle';
+      }
+
+      // === CI/CD ===
+      if (!stack.cicd || stack.cicd.length === 0) {
+        const cicd: string[] = [];
+        if (await fileExists(join(rootDir, '.github/workflows'))) cicd.push('GitHub Actions');
+        if (await fileExists(join(rootDir, '.gitlab-ci.yml'))) cicd.push('GitLab CI');
+        stack.cicd = cicd;
+      }
+    } catch {}
   }
-  
+
   // Check for Go project
   const goModPath = join(rootDir, 'go.mod');
   if (await fileExists(goModPath)) {
     stack.language = 'Go';
     stack.packageManager = 'go';
+
+    try {
+      const goModContent = await readFile(goModPath, 'utf-8');
+
+      // Parse Go version
+      const goVersionMatch = goModContent.match(/^go\s+(\S+)/m);
+      if (goVersionMatch) {
+        stack.runtime = `Go ${goVersionMatch[1]}`;
+      }
+
+      // Parse module path
+      const moduleMatch = goModContent.match(/^module\s+(\S+)/m);
+      const modulePath = moduleMatch?.[1] || '';
+
+      // Parse require block
+      const allGoMods = new Set<string>();
+      const depsRecord: Record<string, string> = {};
+
+      // Single-line requires: require github.com/foo/bar v1.2.3
+      const singleReqs = goModContent.matchAll(/^require\s+(\S+)\s+(\S+)/gm);
+      for (const m of singleReqs) {
+        const modName = m[1].toLowerCase();
+        allGoMods.add(modName);
+        depsRecord[m[1]] = m[2];
+      }
+
+      // Block requires
+      const requireBlocks = goModContent.matchAll(/require\s*\(([\s\S]*?)\)/g);
+      for (const block of requireBlocks) {
+        const lines = block[1].split('\n');
+        for (const line of lines) {
+          const depMatch = line.trim().match(/^(\S+)\s+(\S+)/);
+          if (depMatch && !depMatch[1].startsWith('//')) {
+            allGoMods.add(depMatch[1].toLowerCase());
+            depsRecord[depMatch[1]] = depMatch[2];
+          }
+        }
+      }
+
+      if (Object.keys(depsRecord).length > 0) stack.dependencies = depsRecord;
+
+      // Helper: check if any go module path contains a substring
+      const hasGoMod = (name: string) => [...allGoMods].some(m => m.includes(name));
+
+      // === FRAMEWORKS ===
+      const goFrameworks: string[] = [];
+      if (hasGoMod('gin-gonic/gin')) goFrameworks.push('Gin');
+      if (hasGoMod('labstack/echo')) goFrameworks.push('Echo');
+      if (hasGoMod('gofiber/fiber')) goFrameworks.push('Fiber');
+      if (hasGoMod('go-chi/chi')) goFrameworks.push('Chi');
+      if (hasGoMod('gorilla/mux')) goFrameworks.push('Gorilla Mux');
+      if (hasGoMod('beego')) goFrameworks.push('Beego');
+      if (hasGoMod('grpc')) goFrameworks.push('gRPC');
+      // CLI
+      if (hasGoMod('spf13/cobra')) goFrameworks.push('Cobra');
+      if (hasGoMod('urfave/cli')) goFrameworks.push('urfave/cli');
+      // Config
+      if (hasGoMod('spf13/viper')) goFrameworks.push('Viper');
+
+      if (goFrameworks.length > 0) {
+        stack.frameworks = goFrameworks;
+        stack.framework = goFrameworks[0];
+      }
+
+      // === TESTING ===
+      const goTesting: string[] = ['go test (built-in)'];
+      if (hasGoMod('stretchr/testify')) goTesting.push('Testify');
+      if (hasGoMod('onsi/ginkgo')) goTesting.push('Ginkgo');
+      if (hasGoMod('onsi/gomega')) goTesting.push('Gomega');
+      stack.testingFrameworks = goTesting;
+
+      // === ORM/DATABASE ===
+      if (hasGoMod('gorm.io')) stack.orm = 'GORM';
+      else if (hasGoMod('ent/ent')) stack.orm = 'Ent';
+      else if (hasGoMod('sqlc')) stack.orm = 'sqlc';
+      else if (hasGoMod('jmoiron/sqlx')) stack.orm = 'sqlx';
+
+      const goDatabases: string[] = [];
+      if (hasGoMod('lib/pq') || hasGoMod('jackc/pgx') || hasGoMod('pgx')) goDatabases.push('PostgreSQL');
+      if (hasGoMod('go.mongodb.org') || hasGoMod('mongo-driver')) goDatabases.push('MongoDB');
+      if (hasGoMod('go-redis/redis') || hasGoMod('redis/go-redis')) goDatabases.push('Redis');
+      if (hasGoMod('mattn/go-sqlite3')) goDatabases.push('SQLite');
+      if (hasGoMod('go-sql-driver/mysql')) goDatabases.push('MySQL');
+      if (goDatabases.length > 0) stack.database = goDatabases.join(', ');
+
+      // === DEPLOYMENT ===
+      if (!stack.deployment) {
+        if (await fileExists(join(rootDir, 'Dockerfile'))) stack.deployment = 'Docker';
+        else if (await fileExists(join(rootDir, 'fly.toml'))) stack.deployment = 'Fly.io';
+      }
+
+      // === CI/CD ===
+      if (!stack.cicd || stack.cicd.length === 0) {
+        const cicd: string[] = [];
+        if (await fileExists(join(rootDir, '.github/workflows'))) cicd.push('GitHub Actions');
+        if (await fileExists(join(rootDir, '.gitlab-ci.yml'))) cicd.push('GitLab CI');
+        stack.cicd = cicd;
+      }
+    } catch {}
   }
   
   return stack as Stack;
@@ -909,22 +1152,105 @@ export async function inferArchitecture(rootDir: string): Promise<Architecture> 
     architecture.entryPoints.push({ file: 'manage.py', purpose: 'Django management' });
   }
 
-  if (hasPackages || hasApps) {
-    architecture.type = 'monorepo';
-  } else if (hasServices) {
-    architecture.type = 'microservices';
-  } else if (hasPythonScripts && !hasPythonWebFramework) {
-    architecture.type = 'cli';
-  } else if (hasPythonWebFramework) {
-    architecture.type = 'backend';
-  } else if (hasApp && hasSrc) {
-    architecture.type = 'fullstack';
-  } else if (hasLib && !hasApp) {
-    architecture.type = 'library';
-  } else if (await fileExists(join(rootDir, 'bin'))) {
-    architecture.type = 'cli';
-  } else if (hasPages || hasApp) {
-    architecture.type = 'frontend';
+  // Rust architecture detection
+  let hasRustBin = false;
+  let hasRustLib = false;
+  let hasRustWebFramework = false;
+  let hasRustCliFramework = false;
+  const cargoArchPath = join(rootDir, 'Cargo.toml');
+  if (await fileExists(cargoArchPath)) {
+    try {
+      const cargoContent = await readFile(cargoArchPath, 'utf-8');
+      const cargo = parsePyprojectToml(cargoContent);
+
+      hasRustBin = await fileExists(join(rootDir, 'src/main.rs'));
+      hasRustLib = await fileExists(join(rootDir, 'src/lib.rs'));
+
+      const cargoDeps = Object.keys(cargo?.dependencies || {}).map(s => s.toLowerCase());
+      hasRustWebFramework = cargoDeps.some(d => ['actix-web', 'axum', 'rocket', 'warp', 'tide'].includes(d));
+      hasRustCliFramework = cargoDeps.some(d => ['clap', 'structopt'].includes(d));
+
+      // Rust entry points
+      if (hasRustBin) {
+        architecture.entryPoints = architecture.entryPoints || [];
+        architecture.entryPoints.push({ file: 'src/main.rs', purpose: 'Binary entry point' });
+      }
+      if (hasRustLib) {
+        architecture.entryPoints = architecture.entryPoints || [];
+        architecture.entryPoints.push({ file: 'src/lib.rs', purpose: 'Library entry point' });
+      }
+    } catch {}
+  }
+
+  // Go architecture detection
+  let hasGoCmd = false;
+  let hasGoWebFramework = false;
+  let hasGoCliFramework = false;
+  const goModArchPath = join(rootDir, 'go.mod');
+  if (await fileExists(goModArchPath)) {
+    try {
+      const goModContent = await readFile(goModArchPath, 'utf-8');
+      hasGoCmd = relativeDirs.some(d => d === 'cmd' || d.startsWith('cmd/'));
+      const goMainExists = await fileExists(join(rootDir, 'main.go'));
+
+      const goModLower = goModContent.toLowerCase();
+      hasGoWebFramework = ['gin-gonic', 'labstack/echo', 'gofiber/fiber', 'go-chi/chi', 'gorilla/mux'].some(f => goModLower.includes(f));
+      hasGoCliFramework = ['spf13/cobra', 'urfave/cli'].some(f => goModLower.includes(f));
+
+      // Go entry points
+      if (hasGoCmd) {
+        architecture.entryPoints = architecture.entryPoints || [];
+        architecture.entryPoints.push({ file: 'cmd/', purpose: 'CLI entry points' });
+      } else if (goMainExists) {
+        architecture.entryPoints = architecture.entryPoints || [];
+        architecture.entryPoints.push({ file: 'main.go', purpose: 'Application entry' });
+      }
+    } catch {}
+  }
+
+  // === Score-based architecture type detection ===
+  // Each signal contributes to a score for each type
+  const typeScores: Record<string, number> = {
+    monorepo: 0, microservices: 0, cli: 0, backend: 0,
+    fullstack: 0, library: 0, frontend: 0
+  };
+
+  // Monorepo signals
+  if (hasPackages || hasApps) typeScores.monorepo += 10;
+
+  // Microservices signals
+  if (hasServices) typeScores.microservices += 8;
+
+  // CLI signals
+  if (hasPythonScripts && !hasPythonWebFramework) typeScores.cli += 8;
+  if (hasRustCliFramework && hasRustBin) typeScores.cli += 8;
+  if (hasGoCliFramework || hasGoCmd) typeScores.cli += 8;
+  if (await fileExists(join(rootDir, 'bin'))) typeScores.cli += 5;
+
+  // Backend signals
+  if (hasPythonWebFramework) typeScores.backend += 8;
+  if (hasRustWebFramework) typeScores.backend += 8;
+  if (hasGoWebFramework) typeScores.backend += 8;
+  if (relativeDirs.some(d => d.includes('api'))) typeScores.backend += 2;
+
+  // Fullstack signals
+  if (hasApp && hasSrc) typeScores.fullstack += 5;
+  if (hasPythonWebFramework && relativeDirs.some(d => d.includes('dashboard') || d.includes('frontend'))) typeScores.fullstack += 7;
+
+  // Library signals
+  if (hasLib && !hasApp && !hasPages) typeScores.library += 5;
+  if (hasRustLib && !hasRustBin) typeScores.library += 8;
+
+  // Frontend signals
+  if (hasPages || (hasApp && !hasSrc && !hasServices)) typeScores.frontend += 5;
+
+  // Pick highest score, with fallback
+  const sortedTypes = Object.entries(typeScores)
+    .filter(([, score]) => score > 0)
+    .sort((a, b) => b[1] - a[1]);
+
+  if (sortedTypes.length > 0) {
+    architecture.type = sortedTypes[0][0] as any;
   } else {
     architecture.type = 'backend';
   }
@@ -1021,6 +1347,26 @@ export async function inferArchitecture(rootDir: string): Promise<Architecture> 
   }
   if (await fileExists(join(rootDir, 'mypy.ini')) || await fileExists(join(rootDir, '.mypy.ini'))) {
     conventions.push('mypy type checking');
+  }
+
+  // Rust conventions
+  if (await fileExists(cargoArchPath)) {
+    if (await fileExists(join(rootDir, 'rustfmt.toml')) || await fileExists(join(rootDir, '.rustfmt.toml'))) {
+      conventions.push('rustfmt code formatting');
+    }
+    if (await fileExists(join(rootDir, 'clippy.toml')) || await fileExists(join(rootDir, '.clippy.toml'))) {
+      conventions.push('Clippy linting');
+    }
+    // Rust always has these by convention
+    conventions.push('cargo fmt / cargo clippy');
+  }
+
+  // Go conventions
+  if (await fileExists(goModArchPath)) {
+    if (await fileExists(join(rootDir, '.golangci.yml')) || await fileExists(join(rootDir, '.golangci.yaml'))) {
+      conventions.push('golangci-lint');
+    }
+    conventions.push('gofmt / go vet');
   }
 
   architecture.conventions = conventions;

@@ -257,10 +257,168 @@ export async function exportToJSON(rootDir: string): Promise<object> {
   return exportData;
 }
 
-export async function saveExport(rootDir: string, format: 'md' | 'json' = 'md'): Promise<string> {
+export async function exportToClaudeMd(rootDir: string): Promise<string> {
   const contextDir = join(rootDir, CONTEXT_DIR);
-  
-  if (format === 'md') {
+  let md = '# CLAUDE.md\n\n';
+
+  // Project section
+  const projectPath = join(contextDir, CONTEXT_FILES.PROJECT);
+  if (await fileExists(projectPath)) {
+    const project = await readJSON<Project>(projectPath);
+    md += `## What is this project?\n\n`;
+    md += `${project.name}`;
+    if (project.description && project.description !== 'No description provided') {
+      md += ` — ${project.description}`;
+    }
+    md += '\n\n';
+    if (project.license) md += `License: ${project.license}. `;
+    if ((project as any).projectVersion) md += `Version: ${(project as any).projectVersion}.`;
+    if (project.license || (project as any).projectVersion) md += '\n\n';
+  }
+
+  // Commands section
+  const stackPath = join(contextDir, CONTEXT_FILES.STACK);
+  const archPath = join(contextDir, CONTEXT_FILES.ARCHITECTURE);
+  let stack: Stack | null = null;
+  let arch: Architecture | null = null;
+
+  if (await fileExists(stackPath)) stack = await readJSON<Stack>(stackPath);
+  if (await fileExists(archPath)) arch = await readJSON<Architecture>(archPath);
+
+  if (stack) {
+    md += `## Stack\n\n`;
+    md += `- **Language:** ${stack.language}`;
+    if (stack.runtime) md += ` (${stack.runtime})`;
+    md += '\n';
+    if (stack.packageManager) md += `- **Package Manager:** ${stack.packageManager}\n`;
+    if (stack.frameworks && stack.frameworks.length > 0) {
+      md += `- **Frameworks:** ${stack.frameworks.join(', ')}\n`;
+    }
+    if (stack.testingFrameworks && stack.testingFrameworks.length > 0) {
+      md += `- **Testing:** ${stack.testingFrameworks.join(', ')}\n`;
+    }
+    if (stack.database) md += `- **Database:** ${stack.database}\n`;
+    if (stack.orm) md += `- **ORM:** ${stack.orm}\n`;
+    if (stack.styling && stack.styling.length > 0) {
+      md += `- **Styling:** ${stack.styling.join(', ')}\n`;
+    }
+    if (stack.deployment) md += `- **Deployment:** ${stack.deployment}\n`;
+    md += '\n';
+  }
+
+  // Architecture section
+  if (arch) {
+    md += `## Architecture\n\n`;
+    if (arch.type) md += `**Type:** ${arch.type}\n\n`;
+
+    if (arch.entryPoints && arch.entryPoints.length > 0) {
+      md += '**Entry Points:**\n';
+      arch.entryPoints.forEach(ep => {
+        md += `- \`${ep.file}\` — ${ep.purpose}\n`;
+      });
+      md += '\n';
+    }
+
+    if (arch.directories && arch.directories.length > 0) {
+      md += '**Key Directories:**\n';
+      const purposeDirs = arch.directories.filter(d => d.purpose);
+      const topDirs = purposeDirs.length > 0 ? purposeDirs : arch.directories.slice(0, 10);
+      topDirs.forEach(dir => {
+        md += `- \`${dir.path}/\``;
+        if (dir.purpose) md += ` — ${dir.purpose}`;
+        md += '\n';
+      });
+      md += '\n';
+    }
+
+    if (arch.patterns && arch.patterns.length > 0) {
+      md += `**Patterns:** ${arch.patterns.join(', ')}\n\n`;
+    }
+
+    // API endpoints
+    const archAny = arch as any;
+    if (archAny.apiEndpoints?.length > 0) {
+      md += '**API Endpoints:**\n';
+      archAny.apiEndpoints.forEach((ep: any) => {
+        md += `- \`${ep.methods.join(', ')} ${ep.path}\` → \`${ep.file}\`\n`;
+      });
+      md += '\n';
+    }
+
+    // Key files
+    if (archAny.keyFiles?.length > 0) {
+      md += '**Key Files:**\n';
+      archAny.keyFiles.forEach((kf: any) => {
+        md += `- \`${kf.file}\` — ${kf.role}\n`;
+      });
+      md += '\n';
+    }
+  }
+
+  // Constraints section
+  const constraintsPath = join(contextDir, CONTEXT_FILES.CONSTRAINTS);
+  if (await fileExists(constraintsPath)) {
+    const constraints = await readJSON<Constraints>(constraintsPath);
+    const hasContent = (constraints.mustUse?.length ?? 0) > 0 ||
+      (constraints.mustNotUse?.length ?? 0) > 0 ||
+      constraints.codeStyle ||
+      constraints.testing;
+
+    if (hasContent) {
+      md += `## Conventions\n\n`;
+
+      if (constraints.mustUse && constraints.mustUse.length > 0) {
+        constraints.mustUse.forEach(item => {
+          md += `- ${item}\n`;
+        });
+      }
+      if (constraints.codeStyle) {
+        if (constraints.codeStyle.linter) md += `- Linter: ${constraints.codeStyle.linter}\n`;
+        if (constraints.codeStyle.formatter) md += `- Formatter: ${constraints.codeStyle.formatter}\n`;
+      }
+      if (constraints.testing) {
+        md += `- Testing: ${constraints.testing.strategy || 'required'}\n`;
+      }
+      if (constraints.mustNotUse && constraints.mustNotUse.length > 0) {
+        md += '\n**Do NOT use:**\n';
+        constraints.mustNotUse.forEach(item => {
+          md += `- ${item}\n`;
+        });
+      }
+      md += '\n';
+    }
+  }
+
+  // Decisions section
+  const decisionsPath = join(contextDir, CONTEXT_FILES.DECISIONS);
+  if (await fileExists(decisionsPath)) {
+    const decisions = await readJSON<Decisions>(decisionsPath);
+    if (decisions.decisions && decisions.decisions.length > 0) {
+      md += `## Key Decisions\n\n`;
+      decisions.decisions.slice(-5).reverse().forEach(d => {
+        md += `- **${d.title}** (${d.status}): ${d.rationale}\n`;
+      });
+      md += '\n';
+    }
+  }
+
+  return md;
+}
+
+export async function saveExport(rootDir: string, format: 'md' | 'json' | 'claude-md' | 'cursorrules' = 'md'): Promise<string> {
+  const contextDir = join(rootDir, CONTEXT_DIR);
+
+  if (format === 'claude-md') {
+    const content = await exportToClaudeMd(rootDir);
+    const exportPath = join(contextDir, 'CLAUDE.md');
+    await writeMarkdown(exportPath, content);
+    return exportPath;
+  } else if (format === 'cursorrules') {
+    const content = await exportToClaudeMd(rootDir);
+    const exportPath = join(contextDir, '.cursorrules');
+    await writeMarkdown(exportPath, content);
+    return exportPath;
+  } else if (format === 'md') {
     const markdown = await exportToMarkdown(rootDir);
     const exportPath = join(contextDir, CONTEXT_FILES.EXPORT_MD);
     await writeMarkdown(exportPath, markdown);
