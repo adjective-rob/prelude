@@ -58,7 +58,9 @@ export async function getDirectoryTree(rootDir: string, maxDepth: number = 2, cu
   const entries = await readdir(rootDir, { withFileTypes: true });
   
   for (const entry of entries) {
-    if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+    if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules' &&
+        entry.name !== '__pycache__' && !entry.name.endsWith('.egg-info') &&
+        entry.name !== 'venv' && entry.name !== '.venv') {
       const fullPath = join(rootDir, entry.name);
       dirs.push(fullPath);
       

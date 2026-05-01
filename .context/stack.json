@@ -5,6 +5,7 @@
   "runtime": "Node.js >=18.0.0",
   "packageManager": "pnpm",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "cac": "^6.7.14",
     "chokidar": "^3.6.0",
     "colorette": "^2.0.20",

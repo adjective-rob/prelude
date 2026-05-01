@@ -47,5 +47,12 @@ export const IGNORE_PATTERNS = [
   '**/.next/**',
   '**/.context/**',
   '**/*.test.*',
-  '**/*.spec.*'
+  '**/*.spec.*',
+  '**/__pycache__/**',
+  '**/*.egg-info/**',
+  '**/.venv/**',
+  '**/venv/**',
+  '**/.mypy_cache/**',
+  '**/.ruff_cache/**',
+  '**/.pytest_cache/**'
 ] as const;

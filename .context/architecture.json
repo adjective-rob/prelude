@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "directories": [
     {
+      "path": "CLAUDE_TASKS",
+      "fileCount": 5
+    },
+    {
       "path": "bin",
       "fileCount": 1
     },
@@ -16,19 +20,27 @@
     },
     {
       "path": "dist/src",
-      "fileCount": 8
+      "fileCount": 10
     },
     {
       "path": "dist/src/commands",
-      "fileCount": 20
+      "fileCount": 40
     },
     {
       "path": "dist/src/core",
-      "fileCount": 16
+      "fileCount": 36
+    },
+    {
+      "path": "dist/src/mcp",
+      "fileCount": 4
+    },
+    {
+      "path": "dist/src/runtime",
+      "fileCount": 4
     },
     {
       "path": "dist/src/schema",
-      "fileCount": 28,
+      "fileCount": 32,
       "purpose": "Data schemas"
     },
     {
@@ -43,15 +55,23 @@
     },
     {
       "path": "src",
-      "fileCount": 5
+      "fileCount": 7
     },
     {
       "path": "src/commands",
-      "fileCount": 6
+      "fileCount": 10
     },
     {
       "path": "src/core",
-      "fileCount": 6
+      "fileCount": 9
+    },
+    {
+      "path": "src/mcp",
+      "fileCount": 1
+    },
+    {
+      "path": "src/runtime",
+      "fileCount": 1
     },
     {
       "path": "src/schema",
@@ -65,7 +85,7 @@
     },
     {
       "path": "tests",
-      "fileCount": 1,
+      "fileCount": 4,
       "purpose": "Tests"
     }
   ],
@@ -76,5 +96,10 @@
   "conventions": [
     "TypeScript strict mode"
   ],
-  "entryPoints": []
+  "entryPoints": [],
+  "importPatterns": {
+    "heavyImporters": [
+      "bin/prelude.ts"
+    ]
+  }
 }

@@ -8,7 +8,7 @@ export const StackSchema = z.object({
   version: z.string().default(PRELUDE_VERSION),
   language: z.string(),
   runtime: z.string().optional(),
-  packageManager: z.enum(['npm', 'pnpm', 'yarn', 'bun', 'pip', 'poetry', 'cargo', 'go']).optional(),
+  packageManager: z.enum(['npm', 'pnpm', 'yarn', 'bun', 'pip', 'poetry', 'uv', 'pipenv', 'cargo', 'go']).optional(),
   framework: z.string().optional(),
   frameworks: z.array(z.string()).optional(),
   dependencies: z.record(z.string()).optional(),

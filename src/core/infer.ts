@@ -10,6 +10,138 @@ const PRELUDE_VERSION = "1.0.0";
 const SCHEMA_URL = "https://adjective.us/prelude/schemas/v1";
 // --------------------------
 
+// --- Minimal pyproject.toml parser ---
+
+function setNested(obj: Record<string, any>, table: string, key: string, value: any): void {
+  const parts = table ? table.split('.') : [];
+  let current = obj;
+  for (const part of parts) {
+    if (!(part in current)) current[part] = {};
+    current = current[part];
+  }
+  current[key] = value;
+}
+
+function parsePyprojectToml(content: string): Record<string, any> {
+  const result: Record<string, any> = {};
+  let currentTable = '';
+  let collectingArray: any[] | null = null;
+  let collectingKey = '';
+
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+
+    if (!trimmed || trimmed.startsWith('#')) {
+      if (collectingArray !== null) continue;
+      continue;
+    }
+
+    // Handle multiline array continuation
+    if (collectingArray !== null) {
+      if (trimmed === ']') {
+        setNested(result, currentTable, collectingKey, collectingArray);
+        collectingArray = null;
+        continue;
+      }
+      // Inline table in array: {key = "value", ...}
+      if (trimmed.startsWith('{')) {
+        const obj: Record<string, string> = {};
+        const pairPattern = /(\w+)\s*=\s*["']([^"']*)["']/g;
+        let m;
+        while ((m = pairPattern.exec(trimmed)) !== null) {
+          obj[m[1]] = m[2];
+        }
+        if (Object.keys(obj).length > 0) collectingArray.push(obj);
+        continue;
+      }
+      // String in array: "value",
+      const strMatch = trimmed.match(/^["']([^"']*)["']/);
+      if (strMatch) {
+        collectingArray.push(strMatch[1]);
+      }
+      continue;
+    }
+
+    // Table header: [section] or [section.subsection]
+    const tableMatch = trimmed.match(/^\[([^\]]+)\]$/);
+    if (tableMatch) {
+      currentTable = tableMatch[1];
+      continue;
+    }
+
+    // Key = value
+    const kvMatch = trimmed.match(/^([a-zA-Z_-][a-zA-Z0-9_.-]*)\s*=\s*(.*)$/);
+    if (!kvMatch) continue;
+
+    const key = kvMatch[1].trim();
+    const rawValue = kvMatch[2].trim();
+
+    if (rawValue === '[') {
+      collectingArray = [];
+      collectingKey = key;
+    } else if (rawValue.startsWith('[')) {
+      // Inline array
+      const items: any[] = [];
+      // Check for inline tables in array
+      const inlineTablePattern = /\{([^}]+)\}/g;
+      let itMatch;
+      while ((itMatch = inlineTablePattern.exec(rawValue)) !== null) {
+        const obj: Record<string, string> = {};
+        const pairPattern = /(\w+)\s*=\s*["']([^"']*)["']/g;
+        let m;
+        while ((m = pairPattern.exec(itMatch[1])) !== null) {
+          obj[m[1]] = m[2];
+        }
+        if (Object.keys(obj).length > 0) items.push(obj);
+      }
+      if (items.length === 0) {
+        // Plain string array
+        const strPattern = /["']([^"']*)["']/g;
+        let m;
+        while ((m = strPattern.exec(rawValue)) !== null) {
+          items.push(m[1]);
+        }
+      }
+      setNested(result, currentTable, key, items);
+    } else if (rawValue.startsWith('{')) {
+      // Inline table
+      const obj: Record<string, string> = {};
+      const pairPattern = /(\w+)\s*=\s*["']([^"']*)["']/g;
+      let m;
+      while ((m = pairPattern.exec(rawValue)) !== null) {
+        obj[m[1]] = m[2];
+      }
+      setNested(result, currentTable, key, obj);
+    } else if (rawValue.startsWith('"') || rawValue.startsWith("'")) {
+      const quote = rawValue[0];
+      const endIdx = rawValue.indexOf(quote, 1);
+      if (endIdx > 0) {
+        setNested(result, currentTable, key, rawValue.slice(1, endIdx));
+      }
+    } else if (rawValue === 'true' || rawValue === 'false') {
+      setNested(result, currentTable, key, rawValue === 'true');
+    } else if (/^\d+$/.test(rawValue)) {
+      setNested(result, currentTable, key, parseInt(rawValue, 10));
+    }
+  }
+
+  return result;
+}
+
+function extractPyDepName(dep: string): string {
+  return dep.split(/[>=<!~\[;@ ]/)[0].trim().toLowerCase();
+}
+
+function parseRequirementsTxt(content: string): string[] {
+  return content.split('\n')
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith('#') && !line.startsWith('-') && !line.startsWith('git+'))
+    .map(line => extractPyDepName(line))
+    .filter(name => name.length > 0);
+}
+
+// ---------------------------------
+
 interface PackageInfo {
   location: string;
   name: string;
@@ -121,36 +253,22 @@ async function analyzeGitConfig(rootDir: string): Promise<any> {
 export async function inferProjectMetadata(rootDir: string): Promise<Project> {
   const packageJsonPath = join(rootDir, 'package.json');
   const hasPackageJson = await fileExists(packageJsonPath);
-  
+
   let projectData: any = {};
-  
+
   if (hasPackageJson) {
     projectData = await readJSON(packageJsonPath);
   }
-  
-  // Try to read README for better description
-  let description = projectData.description || 'No description provided';
-  const readmePath = join(rootDir, 'README.md');
-  if (await fileExists(readmePath)) {
-    try {
-      const readme = await readFile(readmePath, 'utf-8');
-      const lines = readme.split('\n').filter(l => l.trim());
-      // Try to get first meaningful paragraph
-      const firstParagraph = lines.find(l => !l.startsWith('#') && l.length > 20);
-      if (firstParagraph && (!projectData.description || projectData.description === '')) {
-        description = firstParagraph.slice(0, 200);
-      }
-    } catch {}
-  }
-  
-  const name = projectData.name || basename(rootDir);
-  const projectVersion = projectData.version; // Use the renamed field
-  const repository = projectData.repository?.url || projectData.repository;
-  const license = projectData.license;
-  const homepage = projectData.homepage;
-  
+
+  let name = projectData.name || '';
+  let description = projectData.description || '';
+  let projectVersion = projectData.version;
+  let repository = projectData.repository?.url || projectData.repository;
+  let license = projectData.license;
+  let homepage = projectData.homepage;
+
   // Detect team info from package.json
-  const team = [];
+  const team: any[] = [];
   if (projectData.author) {
     if (typeof projectData.author === 'string') {
       team.push({ name: projectData.author });
@@ -161,13 +279,67 @@ export async function inferProjectMetadata(rootDir: string): Promise<Project> {
   if (projectData.contributors) {
     team.push(...projectData.contributors);
   }
-  
+
+  // Try pyproject.toml for Python projects
+  const pyprojectPath = join(rootDir, 'pyproject.toml');
+  if (await fileExists(pyprojectPath)) {
+    try {
+      const pyContent = await readFile(pyprojectPath, 'utf-8');
+      const pyproject = parsePyprojectToml(pyContent);
+      const proj = pyproject?.project || {};
+
+      if (!name && proj.name) name = proj.name;
+      if (!description && proj.description) description = proj.description;
+      if (!projectVersion && proj.version) projectVersion = proj.version;
+
+      // License from pyproject.toml
+      if (!license) {
+        if (typeof proj.license === 'string') license = proj.license;
+        else if (proj.license?.text) license = proj.license.text;
+      }
+
+      // Authors from pyproject.toml
+      if (team.length === 0 && Array.isArray(proj.authors)) {
+        for (const author of proj.authors) {
+          if (typeof author === 'object' && author.name) {
+            team.push({ name: author.name, email: author.email });
+          }
+        }
+      }
+
+      // Python version as runtime info
+      if (proj['requires-python']) {
+        // Store for later use but don't set here — stack handles runtime
+      }
+    } catch {}
+  }
+
+  // Fall back to directory name for name
+  if (!name) name = basename(rootDir);
+
+  // Fall back to README for description
+  if (!description) {
+    const readmePath = join(rootDir, 'README.md');
+    if (await fileExists(readmePath)) {
+      try {
+        const readme = await readFile(readmePath, 'utf-8');
+        const lines = readme.split('\n').filter(l => l.trim());
+        const firstParagraph = lines.find(l => !l.startsWith('#') && !l.startsWith('!') && !l.startsWith('[') && !l.startsWith('<') && !l.startsWith('---') && l.length > 20);
+        if (firstParagraph) {
+          description = firstParagraph.slice(0, 200);
+        }
+      } catch {}
+    }
+  }
+
+  if (!description) description = 'No description provided';
+
   return {
     $schema: `${SCHEMA_URL}/project.schema.json`,
     version: PRELUDE_VERSION,
     name,
     description,
-    projectVersion, // Correctly use renamed field
+    projectVersion,
     createdAt: getCurrentTimestamp(),
     updatedAt: getCurrentTimestamp(),
     repository,
@@ -436,23 +608,185 @@ export async function inferStack(rootDir: string): Promise<Stack> {
   // Check for Python project
   const requirementsPath = join(rootDir, 'requirements.txt');
   const pyprojectPath = join(rootDir, 'pyproject.toml');
-  
-  if (await fileExists(requirementsPath) || await fileExists(pyprojectPath)) {
+
+  if (await fileExists(pyprojectPath) || await fileExists(requirementsPath)) {
     stack.language = 'Python';
-    stack.packageManager = await fileExists(pyprojectPath) ? 'poetry' : 'pip';
-    
-    // Check for common Python frameworks
+
+    const allPyDeps: Set<string> = new Set();
+
+    // Parse pyproject.toml
+    if (await fileExists(pyprojectPath)) {
+      try {
+        const pyContent = await readFile(pyprojectPath, 'utf-8');
+        const pyproject = parsePyprojectToml(pyContent);
+
+        // Package manager detection
+        const buildBackend = pyproject?.['build-system']?.['build-backend'] || '';
+        if (buildBackend.includes('poetry')) {
+          stack.packageManager = 'poetry';
+        } else if (await fileExists(join(rootDir, 'uv.lock'))) {
+          stack.packageManager = 'uv' as any;
+        } else if (await fileExists(join(rootDir, 'poetry.lock'))) {
+          stack.packageManager = 'poetry';
+        } else if (await fileExists(join(rootDir, 'Pipfile')) || await fileExists(join(rootDir, 'Pipfile.lock'))) {
+          stack.packageManager = 'pipenv' as any;
+        } else {
+          stack.packageManager = 'pip';
+        }
+
+        // Python version
+        const requiresPython = pyproject?.project?.['requires-python'];
+        if (requiresPython) {
+          stack.runtime = `Python ${requiresPython}`;
+        }
+
+        // Collect deps from [project.dependencies]
+        const projDeps: string[] = pyproject?.project?.dependencies || [];
+        const depsRecord: Record<string, string> = {};
+        for (const dep of projDeps) {
+          const depName = extractPyDepName(dep);
+          const version = dep.slice(depName.length).replace(/^\[.*?\]/, '').trim() || '*';
+          depsRecord[depName] = version;
+          allPyDeps.add(depName);
+        }
+        if (Object.keys(depsRecord).length > 0) {
+          stack.dependencies = depsRecord;
+        }
+
+        // Collect dev/optional deps from [project.optional-dependencies]
+        const optDeps = pyproject?.project?.['optional-dependencies'] || {};
+        const devDepsRecord: Record<string, string> = {};
+        for (const [, groupDeps] of Object.entries(optDeps)) {
+          if (Array.isArray(groupDeps)) {
+            for (const dep of groupDeps) {
+              if (typeof dep === 'string') {
+                const depName = extractPyDepName(dep);
+                const version = dep.slice(depName.length).replace(/^\[.*?\]/, '').trim() || '*';
+                devDepsRecord[depName] = version;
+                allPyDeps.add(depName);
+              }
+            }
+          }
+        }
+        if (Object.keys(devDepsRecord).length > 0) {
+          stack.devDependencies = devDepsRecord;
+        }
+
+        // Also check Poetry-style deps under [tool.poetry.dependencies]
+        const poetryDeps = pyproject?.tool?.poetry?.dependencies;
+        if (poetryDeps && typeof poetryDeps === 'object') {
+          for (const depName of Object.keys(poetryDeps)) {
+            if (depName !== 'python') allPyDeps.add(depName.toLowerCase());
+          }
+        }
+      } catch {}
+    }
+
+    // Parse requirements.txt as fallback/supplement
     if (await fileExists(requirementsPath)) {
-      const requirements = await readFile(requirementsPath, 'utf-8');
-      const frameworks: string[] = [];
-      
-      if (requirements.includes('django')) frameworks.push('Django');
-      if (requirements.includes('flask')) frameworks.push('Flask');
-      if (requirements.includes('fastapi')) frameworks.push('FastAPI');
-      if (requirements.includes('tornado')) frameworks.push('Tornado');
-      if (requirements.includes('pyramid')) frameworks.push('Pyramid');
-      
-      stack.frameworks = frameworks;
+      try {
+        const reqContent = await readFile(requirementsPath, 'utf-8');
+        const reqDeps = parseRequirementsTxt(reqContent);
+        for (const dep of reqDeps) allPyDeps.add(dep);
+
+        if (!stack.dependencies || Object.keys(stack.dependencies).length === 0) {
+          const depsRecord: Record<string, string> = {};
+          for (const dep of reqDeps) depsRecord[dep] = '*';
+          stack.dependencies = depsRecord;
+          stack.packageManager = stack.packageManager || 'pip';
+        }
+      } catch {}
+    }
+
+    // === FRAMEWORKS ===
+    const pyFrameworks: string[] = [];
+    // Web frameworks
+    if (allPyDeps.has('django')) pyFrameworks.push('Django');
+    if (allPyDeps.has('flask')) pyFrameworks.push('Flask');
+    if (allPyDeps.has('fastapi')) pyFrameworks.push('FastAPI');
+    if (allPyDeps.has('starlette')) pyFrameworks.push('Starlette');
+    if (allPyDeps.has('tornado')) pyFrameworks.push('Tornado');
+    if (allPyDeps.has('pyramid')) pyFrameworks.push('Pyramid');
+    if (allPyDeps.has('sanic')) pyFrameworks.push('Sanic');
+    if (allPyDeps.has('falcon')) pyFrameworks.push('Falcon');
+    if (allPyDeps.has('litestar')) pyFrameworks.push('Litestar');
+    // CLI frameworks
+    if (allPyDeps.has('typer')) pyFrameworks.push('Typer');
+    if (allPyDeps.has('click')) pyFrameworks.push('Click');
+    // ML/AI frameworks
+    if (allPyDeps.has('langchain')) pyFrameworks.push('LangChain');
+    if (allPyDeps.has('transformers')) pyFrameworks.push('Hugging Face Transformers');
+    if (allPyDeps.has('torch') || allPyDeps.has('pytorch')) pyFrameworks.push('PyTorch');
+    if (allPyDeps.has('tensorflow')) pyFrameworks.push('TensorFlow');
+    if (allPyDeps.has('scikit-learn') || allPyDeps.has('sklearn')) pyFrameworks.push('scikit-learn');
+    // Data
+    if (allPyDeps.has('pandas')) pyFrameworks.push('pandas');
+    if (allPyDeps.has('numpy')) pyFrameworks.push('NumPy');
+
+    if (pyFrameworks.length > 0) {
+      stack.frameworks = pyFrameworks;
+      stack.framework = pyFrameworks[0];
+    }
+
+    // === TESTING ===
+    const pyTesting: string[] = [];
+    if (allPyDeps.has('pytest')) pyTesting.push('pytest');
+    if (allPyDeps.has('pytest-cov')) pyTesting.push('pytest-cov');
+    if (allPyDeps.has('hypothesis')) pyTesting.push('Hypothesis');
+    if (allPyDeps.has('tox')) pyTesting.push('tox');
+    if (allPyDeps.has('nox')) pyTesting.push('nox');
+    if (allPyDeps.has('coverage')) pyTesting.push('coverage');
+
+    if (pyTesting.length > 0) {
+      stack.testingFrameworks = pyTesting;
+    }
+
+    // === BUILD TOOLS ===
+    const pyBuildTools: string[] = [];
+    if (allPyDeps.has('setuptools')) pyBuildTools.push('setuptools');
+    if (allPyDeps.has('wheel')) pyBuildTools.push('wheel');
+    if (allPyDeps.has('cython')) pyBuildTools.push('Cython');
+    if (allPyDeps.has('maturin')) pyBuildTools.push('Maturin');
+
+    if (pyBuildTools.length > 0) {
+      stack.buildTools = pyBuildTools;
+    }
+
+    // === ORM/DATABASE ===
+    if (allPyDeps.has('sqlalchemy')) stack.orm = 'SQLAlchemy';
+    else if (allPyDeps.has('tortoise-orm')) stack.orm = 'Tortoise ORM';
+    else if (allPyDeps.has('peewee')) stack.orm = 'Peewee';
+    else if (allPyDeps.has('mongoengine')) stack.orm = 'MongoEngine';
+    else if (allPyDeps.has('django')) stack.orm = 'Django ORM';
+
+    const pyDatabases: string[] = [];
+    if (allPyDeps.has('psycopg2') || allPyDeps.has('psycopg2-binary') || allPyDeps.has('psycopg') || allPyDeps.has('asyncpg')) pyDatabases.push('PostgreSQL');
+    if (allPyDeps.has('pymongo') || allPyDeps.has('motor')) pyDatabases.push('MongoDB');
+    if (allPyDeps.has('redis') || allPyDeps.has('aioredis')) pyDatabases.push('Redis');
+    if (allPyDeps.has('pymysql') || allPyDeps.has('mysqlclient')) pyDatabases.push('MySQL');
+    if (allPyDeps.has('aiosqlite')) pyDatabases.push('SQLite');
+    if (allPyDeps.has('supabase')) pyDatabases.push('Supabase');
+
+    if (pyDatabases.length > 0) {
+      stack.database = pyDatabases.join(', ');
+    }
+
+    // === DEPLOYMENT ===
+    if (!stack.deployment) {
+      if (await fileExists(join(rootDir, 'Dockerfile'))) stack.deployment = 'Docker';
+      else if (await fileExists(join(rootDir, 'Procfile'))) stack.deployment = 'Heroku';
+      else if (await fileExists(join(rootDir, 'fly.toml'))) stack.deployment = 'Fly.io';
+      else if (await fileExists(join(rootDir, 'render.yaml'))) stack.deployment = 'Render';
+    }
+
+    // === CI/CD ===
+    if (!stack.cicd || stack.cicd.length === 0) {
+      const cicd: string[] = [];
+      if (await fileExists(join(rootDir, '.github/workflows'))) cicd.push('GitHub Actions');
+      if (await fileExists(join(rootDir, '.gitlab-ci.yml'))) cicd.push('GitLab CI');
+      if (await fileExists(join(rootDir, '.circleci'))) cicd.push('CircleCI');
+      if (await fileExists(join(rootDir, 'tox.ini'))) cicd.push('tox');
+      stack.cicd = cicd;
     }
   }
   
@@ -536,10 +870,53 @@ export async function inferArchitecture(rootDir: string): Promise<Architecture> 
   const hasApps = relativeDirs.some(d => d === 'apps');
   const hasServices = relativeDirs.some(d => d === 'services');
   
+  // Check for Python CLI entry points from pyproject.toml
+  let hasPythonScripts = false;
+  let hasPythonWebFramework = false;
+  const pyprojectArchPath = join(rootDir, 'pyproject.toml');
+  if (await fileExists(pyprojectArchPath)) {
+    try {
+      const pyContent = await readFile(pyprojectArchPath, 'utf-8');
+      const pyproject = parsePyprojectToml(pyContent);
+
+      // CLI entry points from [project.scripts]
+      const scripts = pyproject?.project?.scripts;
+      if (scripts && typeof scripts === 'object' && Object.keys(scripts).length > 0) {
+        hasPythonScripts = true;
+        for (const [cmdName, entryPoint] of Object.entries(scripts)) {
+          if (typeof entryPoint === 'string') {
+            architecture.entryPoints = architecture.entryPoints || [];
+            architecture.entryPoints.push({
+              file: entryPoint as string,
+              purpose: `CLI command: ${cmdName}`
+            });
+          }
+        }
+      }
+
+      // Check for web framework deps
+      const deps: string[] = pyproject?.project?.dependencies || [];
+      const depNames = deps.map(extractPyDepName);
+      hasPythonWebFramework = depNames.some(d =>
+        ['django', 'flask', 'fastapi', 'starlette', 'sanic', 'tornado', 'falcon', 'litestar'].includes(d)
+      );
+    } catch {}
+  }
+
+  // Python-specific entry points
+  if (await fileExists(join(rootDir, 'manage.py'))) {
+    architecture.entryPoints = architecture.entryPoints || [];
+    architecture.entryPoints.push({ file: 'manage.py', purpose: 'Django management' });
+  }
+
   if (hasPackages || hasApps) {
     architecture.type = 'monorepo';
   } else if (hasServices) {
     architecture.type = 'microservices';
+  } else if (hasPythonScripts && !hasPythonWebFramework) {
+    architecture.type = 'cli';
+  } else if (hasPythonWebFramework) {
+    architecture.type = 'backend';
   } else if (hasApp && hasSrc) {
     architecture.type = 'fullstack';
   } else if (hasLib && !hasApp) {
@@ -602,7 +979,10 @@ export async function inferArchitecture(rootDir: string): Promise<Architecture> 
   if (relativeDirs.some(d => d.includes('layouts'))) patterns.push('Layout components');
   if (relativeDirs.some(d => d.includes('features'))) patterns.push('Feature-based organization');
   if (relativeDirs.some(d => d.includes('modules'))) patterns.push('Module pattern');
-  
+  if (relativeDirs.some(d => d.includes('agents'))) patterns.push('Agent-based architecture');
+  if (relativeDirs.some(d => d.includes('missions') || d.includes('pipelines'))) patterns.push('Pipeline pattern');
+  if (relativeDirs.some(d => d.includes('models') && !d.includes('node_modules'))) patterns.push('Data models');
+
   architecture.patterns = patterns;
   
   // Detect conventions
@@ -622,20 +1002,40 @@ export async function inferArchitecture(rootDir: string): Promise<Architecture> 
   if (await fileExists(join(rootDir, '.husky'))) {
     conventions.push('Git hooks (Husky)');
   }
-  
+
+  // Python conventions
+  if (await fileExists(pyprojectArchPath)) {
+    try {
+      const pyContent = await readFile(pyprojectArchPath, 'utf-8');
+      const pyproject = parsePyprojectToml(pyContent);
+
+      if (pyproject?.tool?.ruff) conventions.push('Ruff code linting');
+      if (pyproject?.tool?.black) conventions.push('Black code formatting');
+      if (pyproject?.tool?.mypy) conventions.push('mypy type checking');
+      if (pyproject?.tool?.isort) conventions.push('isort import sorting');
+      if (pyproject?.tool?.pytest) conventions.push('pytest configuration');
+    } catch {}
+  }
+  if (await fileExists(join(rootDir, '.flake8'))) {
+    conventions.push('flake8 code linting');
+  }
+  if (await fileExists(join(rootDir, 'mypy.ini')) || await fileExists(join(rootDir, '.mypy.ini'))) {
+    conventions.push('mypy type checking');
+  }
+
   architecture.conventions = conventions;
   
-  // Detect entry points
-  const entryPoints: any[] = [];
-  
+  // Detect entry points (preserve any already detected, e.g. from pyproject.toml)
+  const entryPoints: any[] = architecture.entryPoints || [];
+
   if (await fileExists(join(rootDir, 'src/index.ts'))) entryPoints.push({ file: 'src/index.ts', purpose: 'Main entry point' });
   else if (await fileExists(join(rootDir, 'src/index.tsx'))) entryPoints.push({ file: 'src/index.tsx', purpose: 'Main entry point' });
   else if (await fileExists(join(rootDir, 'index.ts'))) entryPoints.push({ file: 'index.ts', purpose: 'Main entry point' });
-  
+
   if (await fileExists(join(rootDir, 'src/main.ts'))) entryPoints.push({ file: 'src/main.ts', purpose: 'Application entry' });
   if (await fileExists(join(rootDir, 'src/app.ts'))) entryPoints.push({ file: 'src/app.ts', purpose: 'Application setup' });
   if (await fileExists(join(rootDir, 'src/server.ts'))) entryPoints.push({ file: 'src/server.ts', purpose: 'Server entry' });
-  
+
   architecture.entryPoints = entryPoints;
 
   // --- Source-level scanning ---
@@ -752,6 +1152,77 @@ export async function inferConstraints(rootDir: string): Promise<Constraints> {
     };
   }
   
+  // Python code style tools
+  const pyprojectConstraintsPath = join(rootDir, 'pyproject.toml');
+  if (await fileExists(pyprojectConstraintsPath)) {
+    try {
+      const pyContent = await readFile(pyprojectConstraintsPath, 'utf-8');
+      const pyproject = parsePyprojectToml(pyContent);
+
+      // Linter
+      if (pyproject?.tool?.ruff) {
+        constraints.codeStyle = {
+          ...constraints.codeStyle,
+          linter: 'Ruff'
+        };
+        const targetVersion = pyproject.tool.ruff['target-version'];
+        if (targetVersion && typeof targetVersion === 'string') {
+          // py311 → 3.11, py39 → 3.9
+          const nums = targetVersion.replace('py', '');
+          const major = nums[0];
+          const minor = nums.slice(1);
+          if (major && minor) {
+            constraints.mustUse?.push(`Python ${major}.${minor}+`);
+          }
+        }
+        const lineLength = pyproject.tool.ruff['line-length'];
+        if (lineLength) {
+          constraints.preferences?.push({
+            category: 'Code Style',
+            preference: `Line length: ${lineLength}`,
+            rationale: 'Ruff configuration'
+          });
+        }
+      }
+      if (pyproject?.tool?.black) {
+        constraints.codeStyle = {
+          ...constraints.codeStyle,
+          formatter: 'Black'
+        };
+      }
+      if (pyproject?.tool?.mypy) {
+        constraints.mustUse?.push('mypy for type checking');
+      }
+
+      // Python version constraint (only if not already added from Ruff target-version)
+      const requiresPython = pyproject?.project?.['requires-python'];
+      if (requiresPython && !constraints.mustUse?.some(m => m.startsWith('Python '))) {
+        constraints.mustUse?.push(`Python ${requiresPython}`);
+      }
+
+      // Testing from pyproject
+      const deps: string[] = pyproject?.project?.dependencies || [];
+      const optDeps = pyproject?.project?.['optional-dependencies'] || {};
+      const allDepNames = new Set([
+        ...deps.map(extractPyDepName),
+        ...Object.values(optDeps).flat().filter((d): d is string => typeof d === 'string').map(extractPyDepName)
+      ]);
+
+      if (allDepNames.has('pytest') || pyproject?.tool?.pytest) {
+        constraints.testing = {
+          required: true,
+          strategy: 'pytest'
+        };
+      }
+    } catch {}
+  }
+  if (await fileExists(join(rootDir, '.flake8'))) {
+    constraints.codeStyle = {
+      ...constraints.codeStyle,
+      linter: constraints.codeStyle?.linter || 'flake8'
+    };
+  }
+
   // Check for TypeScript
   if (await fileExists(join(rootDir, 'tsconfig.json'))) {
     constraints.mustUse?.push('TypeScript for type safety');

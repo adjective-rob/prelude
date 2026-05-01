@@ -61,10 +61,13 @@ export interface KeyFileInfo {
 
 // --- Constants ---
 
-const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
+const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.py']);
 const MAX_READ_LINES = 100;
 const MAX_READ_BYTES = 4096;
-const SKIP_DIRS = new Set(['node_modules', '.next', 'dist', 'build', '.git', '.context', 'coverage', '.turbo']);
+const SKIP_DIRS = new Set([
+  'node_modules', '.next', 'dist', 'build', '.git', '.context', 'coverage', '.turbo',
+  '__pycache__', '.venv', 'venv', '.mypy_cache', '.ruff_cache', '.pytest_cache',
+]);
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const;
 
 // --- Helpers ---
@@ -97,7 +100,7 @@ async function collectSourceFiles(rootDir: string): Promise<string[]> {
       const fullPath = join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.')) {
+        if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.') && !entry.name.endsWith('.egg-info')) {
           await walk(fullPath, depth + 1);
         }
       } else if (entry.isFile()) {
@@ -372,6 +375,94 @@ function scanImportPatterns(file: string, content: string, result: SourceScanRes
   }
 }
 
+// --- Python scanners ---
+
+function scanPythonRoutes(file: string, content: string, result: SourceScanResult): void {
+  // FastAPI / Starlette decorator routes: @app.get("/path"), @router.post("/path")
+  const fastapiPattern = /(?:@(?:app|router)\.(get|post|put|patch|delete|head|options))\s*\(\s*["']([^"']+)["']/gi;
+  const pathMap = new Map<string, string[]>();
+  let match;
+
+  while ((match = fastapiPattern.exec(content)) !== null) {
+    const method = match[1].toUpperCase();
+    const path = match[2];
+    if (!pathMap.has(path)) pathMap.set(path, []);
+    const methods = pathMap.get(path)!;
+    if (!methods.includes(method)) methods.push(method);
+  }
+
+  for (const [path, methods] of pathMap) {
+    result.apiEndpoints.push({ file, path, methods });
+  }
+
+  // Flask routes: @app.route("/path") or @blueprint.route("/path")
+  const flaskPattern = /@(?:app|blueprint|bp)\.route\s*\(\s*["']([^"']+)["']/gi;
+  while ((match = flaskPattern.exec(content)) !== null) {
+    // Check for methods= kwarg
+    const methodsMatch = content.slice(match.index).match(/methods\s*=\s*\[([^\]]+)\]/);
+    const methods = methodsMatch
+      ? methodsMatch[1].match(/["'](\w+)["']/g)?.map(m => m.replace(/["']/g, '').toUpperCase()) || ['GET']
+      : ['GET'];
+    result.apiEndpoints.push({ file, path: match[1], methods });
+  }
+}
+
+function scanPythonKeyFiles(file: string, content: string, result: SourceScanResult): void {
+  const fileName = basename(file);
+
+  if (fileName === 'manage.py') {
+    result.keyFiles.push({ file, role: 'Django management' });
+    return;
+  }
+  if (fileName === 'wsgi.py' || fileName === 'asgi.py') {
+    result.keyFiles.push({ file, role: 'WSGI/ASGI entry' });
+    return;
+  }
+  if (fileName === 'conftest.py') {
+    result.keyFiles.push({ file, role: 'pytest fixtures' });
+    return;
+  }
+  if (fileName === '__main__.py') {
+    result.keyFiles.push({ file, role: 'module entry point' });
+    return;
+  }
+  if (fileName === 'cli.py' || fileName === 'main.py') {
+    if (/(?:typer|click|argparse)/.test(content)) {
+      result.keyFiles.push({ file, role: 'CLI entry point' });
+      return;
+    }
+  }
+  if (/(?:app\s*=\s*(?:FastAPI|Flask|Starlette|Sanic|Falcon))\s*\(/.test(content) && !file.includes('test')) {
+    result.keyFiles.push({ file, role: 'application entry' });
+    return;
+  }
+
+  // Database connections
+  if (/(?:create_engine|sessionmaker|AsyncSession)\s*\(/.test(content)) {
+    if (/(?:db|database|engine|session)/i.test(file)) {
+      result.keyFiles.push({ file, role: 'database connection' });
+    }
+  }
+}
+
+function scanPythonPatterns(file: string, content: string, result: SourceScanResult): void {
+  const ext = extname(file);
+  if (ext !== '.py') return;
+
+  scanPythonRoutes(file, content, result);
+  scanPythonKeyFiles(file, content, result);
+
+  // Import patterns — detect heavy importers
+  const importLines = content.split('\n').filter(line =>
+    /^(?:import|from)\s/.test(line.trimStart())
+  );
+  if (importLines.length >= 10) {
+    if (!result.importPatterns.heavyImporters.includes(file)) {
+      result.importPatterns.heavyImporters.push(file);
+    }
+  }
+}
+
 // --- Main export ---
 
 export async function scanSources(rootDir: string): Promise<SourceScanResult> {
@@ -401,11 +492,16 @@ export async function scanSources(rootDir: string): Promise<SourceScanResult> {
     if (content === null) continue;
 
     try {
-      scanReactPatterns(file, content, result);
-      scanRoutes(file, content, result);
-      scanMiddleware(file, content, result);
-      scanKeyFiles(file, content, result);
-      scanImportPatterns(file, content, result);
+      const ext = extname(file);
+      if (ext === '.py') {
+        scanPythonPatterns(file, content, result);
+      } else {
+        scanReactPatterns(file, content, result);
+        scanRoutes(file, content, result);
+        scanMiddleware(file, content, result);
+        scanKeyFiles(file, content, result);
+        scanImportPatterns(file, content, result);
+      }
     } catch {
       // Skip files that cause errors in any scanner
       continue;
