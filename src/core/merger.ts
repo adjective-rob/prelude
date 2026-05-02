@@ -53,8 +53,9 @@ export class ContextMerger {
       }
     }
 
-    // Always preserve certain fields (only if they actually exist)
-    const preserveFields = ['team', 'goals'];
+    // Always preserve certain user-maintained fields.
+    // name/description are almost always hand-curated to be richer than inference.
+    const preserveFields = ['name', 'description', 'team', 'goals'];
     for (const field of preserveFields) {
       const existingValue = existing[field as keyof Project];
       const inferredValue = inferred[field as keyof Project];

@@ -160,17 +160,19 @@ async function forceUpdate(
     constraints: await safeReadJSON<Constraints>(join(contextDir, 'constraints.json')),
   };
 
-  // Merge: inferred values win, but existing fields are preserved when
-  // inference returned undefined/null/empty for them.
-  const mergedProject = mergePreserving(existing.project, inferred.project);
-  const mergedStack = mergePreserving(existing.stack, inferred.stack);
-  const mergedArch = mergePreserving(existing.architecture, inferred.architecture);
-  const mergedConstraints = mergePreserving(existing.constraints, inferred.constraints);
+  // Use the full ContextMerger for project (preserves name, description, team, goals).
+  // Use mergePreserving for the rest — inferred wins, existing preserved when empty.
+  const stateManager = new StateManager(contextDir);
+  const merger = new ContextMerger(stateManager);
+  const projectResult = merger.mergeProject(existing.project, inferred.project);
+  const stackResult = merger.mergeStack(existing.stack, inferred.stack);
+  const archResult = merger.mergeArchitecture(existing.architecture, inferred.architecture);
+  const constraintsResult = merger.mergeConstraints(existing.constraints, inferred.constraints);
 
-  await writeJSON(join(contextDir, 'project.json'), mergedProject);
-  await writeJSON(join(contextDir, 'stack.json'), mergedStack);
-  await writeJSON(join(contextDir, 'architecture.json'), mergedArch);
-  await writeJSON(join(contextDir, 'constraints.json'), mergedConstraints);
+  await writeJSON(join(contextDir, 'project.json'), projectResult.merged);
+  await writeJSON(join(contextDir, 'stack.json'), stackResult.merged);
+  await writeJSON(join(contextDir, 'architecture.json'), archResult.merged);
+  await writeJSON(join(contextDir, 'constraints.json'), constraintsResult.merged);
 
   // Preserve decisions and changelog (they're already on disk)
 
