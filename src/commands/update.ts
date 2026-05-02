@@ -137,7 +137,9 @@ export async function update(options: UpdateOptions = {}) {
 }
 
 /**
- * Force update - overwrites everything
+ * Force update - re-infers everything but preserves existing fields that
+ * inference can't produce. Inferred fields always win; existing fields
+ * are kept only when the inference engine returned nothing for them.
  */
 async function forceUpdate(
   contextDir: string,
@@ -145,16 +147,30 @@ async function forceUpdate(
   options: UpdateOptions
 ) {
   if (options.dryRun) {
-    logger.info('🔍 Force mode would overwrite all context files');
-    logger.info('(decisions.json and changelog.md will be preserved)');
+    logger.info('🔍 Force mode would overwrite all inferred context files');
+    logger.info('(decisions.json, changelog.md, and hand-curated fields preserved)');
     return;
   }
 
-  // Write inferred context
-  await writeJSON(join(contextDir, 'project.json'), inferred.project);
-  await writeJSON(join(contextDir, 'stack.json'), inferred.stack);
-  await writeJSON(join(contextDir, 'architecture.json'), inferred.architecture);
-  await writeJSON(join(contextDir, 'constraints.json'), inferred.constraints);
+  // Read existing context so we can merge
+  const existing = {
+    project: await safeReadJSON<Project>(join(contextDir, 'project.json')),
+    stack: await safeReadJSON<Stack>(join(contextDir, 'stack.json')),
+    architecture: await safeReadJSON<Architecture>(join(contextDir, 'architecture.json')),
+    constraints: await safeReadJSON<Constraints>(join(contextDir, 'constraints.json')),
+  };
+
+  // Merge: inferred values win, but existing fields are preserved when
+  // inference returned undefined/null/empty for them.
+  const mergedProject = mergePreserving(existing.project, inferred.project);
+  const mergedStack = mergePreserving(existing.stack, inferred.stack);
+  const mergedArch = mergePreserving(existing.architecture, inferred.architecture);
+  const mergedConstraints = mergePreserving(existing.constraints, inferred.constraints);
+
+  await writeJSON(join(contextDir, 'project.json'), mergedProject);
+  await writeJSON(join(contextDir, 'stack.json'), mergedStack);
+  await writeJSON(join(contextDir, 'architecture.json'), mergedArch);
+  await writeJSON(join(contextDir, 'constraints.json'), mergedConstraints);
 
   // Preserve decisions and changelog (they're already on disk)
 
@@ -162,6 +178,56 @@ async function forceUpdate(
     logger.success('✅ Force update complete');
     logger.info('ℹ️  All context files overwritten (except decisions.json and changelog.md)');
   }
+}
+
+/**
+ * Safely read JSON, returning empty object if file doesn't exist or is invalid.
+ */
+async function safeReadJSON<T>(path: string): Promise<T> {
+  try {
+    return await readJSON<T>(path);
+  } catch {
+    return {} as T;
+  }
+}
+
+/**
+ * Merge inferred data over existing, preserving existing fields that
+ * inference returned empty/undefined for.
+ *
+ * Rule: inferred non-empty values always win. Existing values are kept
+ * only when the inferred value is undefined, null, empty string, empty
+ * array, or empty object.
+ */
+function mergePreserving(existing: any, inferred: any): any {
+  if (!existing || typeof existing !== 'object') return inferred;
+  if (!inferred || typeof inferred !== 'object') return existing;
+
+  const merged = { ...existing };
+
+  // Overlay all inferred fields
+  for (const key of Object.keys(inferred)) {
+    const val = inferred[key];
+    if (val === undefined || val === null) continue;
+
+    // Empty array — keep existing if it has content
+    if (Array.isArray(val) && val.length === 0) {
+      if (Array.isArray(existing[key]) && existing[key].length > 0) continue;
+    }
+
+    // Empty object — keep existing if it has content
+    if (typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length === 0) {
+      if (typeof existing[key] === 'object' && existing[key] !== null &&
+          !Array.isArray(existing[key]) && Object.keys(existing[key]).length > 0) continue;
+    }
+
+    // Empty string — keep existing if it has content
+    if (val === '' && existing[key] && typeof existing[key] === 'string' && existing[key].length > 0) continue;
+
+    merged[key] = val;
+  }
+
+  return merged;
 }
 
 /**

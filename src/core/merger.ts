@@ -113,16 +113,53 @@ export class ContextMerger {
    */
   mergeStack(existing: Stack, inferred: Stack): MergeResult<Stack> {
     const changes: MergeChange[] = [];
-    const merged: Stack = { ...inferred };
+    // Start from existing, overlay inferred — preserves fields inference can't produce
+    const merged: Stack = { ...existing, ...inferred };
 
-    // Check for removed dependencies
+    // Carry forward existing fields that inference returned empty/undefined for
+    for (const key of Object.keys(existing) as Array<keyof Stack>) {
+      const existingValue = existing[key];
+      const inferredValue = inferred[key];
+
+      if (existingValue !== undefined && existingValue !== null) {
+        // Inference produced nothing for this field — keep existing
+        if (inferredValue === undefined || inferredValue === null) {
+          (merged as any)[key] = existingValue;
+          changes.push({
+            field: key as string,
+            type: 'preserved',
+            newValue: existingValue,
+            reason: 'Existing value preserved (not re-inferred)',
+          });
+        }
+        // Inference produced an empty array/object but existing has content — keep existing
+        else if (
+          (Array.isArray(inferredValue) && inferredValue.length === 0 &&
+           Array.isArray(existingValue) && existingValue.length > 0) ||
+          (typeof inferredValue === 'object' && !Array.isArray(inferredValue) &&
+           Object.keys(inferredValue as object).length === 0 &&
+           typeof existingValue === 'object' && !Array.isArray(existingValue) &&
+           Object.keys(existingValue as object).length > 0)
+        ) {
+          (merged as any)[key] = existingValue;
+          changes.push({
+            field: key as string,
+            type: 'preserved',
+            newValue: existingValue,
+            reason: 'Existing value preserved (inference returned empty)',
+          });
+        }
+      }
+    }
+
+    // Track framework/dep additions and removals
     const existingDeps = new Set([
       ...(existing.frameworks || []),
       ...(existing.buildTools || []),
       ...(existing.testingFrameworks || []),
       ...(existing.styling || []),
     ]);
-    
+
     const inferredDeps = new Set([
       ...(inferred.frameworks || []),
       ...(inferred.buildTools || []),
@@ -213,7 +250,31 @@ export class ContextMerger {
    */
   mergeConstraints(existing: Constraints, inferred: Constraints): MergeResult<Constraints> {
     const changes: MergeChange[] = [];
-    const merged: Constraints = { ...inferred };
+    // Start from existing, overlay inferred — preserves hand-curated fields
+    const merged: Constraints = { ...existing, ...inferred };
+
+    // Carry forward existing fields that inference returned empty/undefined for
+    for (const key of Object.keys(existing) as Array<keyof Constraints>) {
+      const existingValue = existing[key];
+      const inferredValue = inferred[key];
+
+      if (existingValue !== undefined && existingValue !== null) {
+        if (inferredValue === undefined || inferredValue === null) {
+          (merged as any)[key] = existingValue;
+        }
+        // Preserve non-empty arrays/objects over empty inferred ones
+        else if (
+          (Array.isArray(inferredValue) && inferredValue.length === 0 &&
+           Array.isArray(existingValue) && existingValue.length > 0) ||
+          (typeof inferredValue === 'object' && !Array.isArray(inferredValue) &&
+           Object.keys(inferredValue as object).length === 0 &&
+           typeof existingValue === 'object' && !Array.isArray(existingValue) &&
+           Object.keys(existingValue as object).length > 0)
+        ) {
+          (merged as any)[key] = existingValue;
+        }
+      }
+    }
 
     // Preserve user-added preferences
     if (existing.preferences && existing.preferences.length > 0) {
@@ -237,20 +298,30 @@ export class ContextMerger {
     }
 
     // Merge mustUse/mustNotUse (combine inferred + manual)
-    if (existing.mustUse) {
-      const manual = existing.mustUse.filter(item =>
-        this.stateManager.isManuallyEdited('constraints.json', `mustUse.${item}`)
-      );
-      
-      merged.mustUse = [...new Set([...(inferred.mustUse || []), ...manual])];
+    // If inference returned nothing, keep all existing items.
+    // Otherwise, keep inferred + manually-edited existing items.
+    if (existing.mustUse && existing.mustUse.length > 0) {
+      const inferredMustUse = inferred.mustUse || [];
+      if (inferredMustUse.length === 0) {
+        merged.mustUse = existing.mustUse;
+      } else {
+        const manual = existing.mustUse.filter(item =>
+          this.stateManager.isManuallyEdited('constraints.json', `mustUse.${item}`)
+        );
+        merged.mustUse = [...new Set([...inferredMustUse, ...manual])];
+      }
     }
 
-    if (existing.mustNotUse) {
-      const manual = existing.mustNotUse.filter(item =>
-        this.stateManager.isManuallyEdited('constraints.json', `mustNotUse.${item}`)
-      );
-      
-      merged.mustNotUse = [...new Set([...(inferred.mustNotUse || []), ...manual])];
+    if (existing.mustNotUse && existing.mustNotUse.length > 0) {
+      const inferredMustNotUse = inferred.mustNotUse || [];
+      if (inferredMustNotUse.length === 0) {
+        merged.mustNotUse = existing.mustNotUse;
+      } else {
+        const manual = existing.mustNotUse.filter(item =>
+          this.stateManager.isManuallyEdited('constraints.json', `mustNotUse.${item}`)
+        );
+        merged.mustNotUse = [...new Set([...inferredMustNotUse, ...manual])];
+      }
     }
 
     return { merged, changes };
