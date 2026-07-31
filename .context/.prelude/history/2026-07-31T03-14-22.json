@@ -1,69 +1,69 @@
 {
   "version": "1.0.0",
   "initialized": "2025-11-15T00:02:36.981Z",
-  "lastUpdate": "2026-07-31T03:14:22.874Z",
+  "lastUpdate": "2026-07-31T02:23:17.965Z",
   "files": [
     {
       "file": "project.json",
-      "lastUpdated": "2026-07-31T03:14:22.873Z",
+      "lastUpdated": "2026-07-31T02:23:17.965Z",
       "fields": {
         "$schema": {
           "value": "https://adjective.us/prelude/schemas/v1/project.schema.json",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.873Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "d35229c2d410c3f6"
         },
         "version": {
           "value": "1.0.0",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.873Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "39fe4a40977d0585"
         },
         "name": {
           "value": "prelude-context",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.873Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "f7540c38a8a54265"
         },
         "description": {
           "value": "The open standard for expressing and maintaining machine-readable context about a codebase",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.873Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "c8c7f34c24e1cbc5"
         },
         "projectVersion": {
           "value": "1.8.1",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.873Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "3d15ac1ffbcf36bc"
         },
         "createdAt": {
-          "value": "2026-07-31T03:14:22.833Z",
+          "value": "2026-07-31T02:23:17.945Z",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.873Z",
-          "inferredHash": "9fb95bb8d8df2206"
+          "lastInferred": "2026-07-31T02:23:17.965Z",
+          "inferredHash": "4c4dc2ddc6185601"
         },
         "updatedAt": {
-          "value": "2026-07-31T03:14:22.869Z",
+          "value": "2026-07-31T02:23:17.963Z",
           "source": "manual",
-          "lastModified": "2026-07-31T03:14:22.873Z"
+          "lastModified": "2026-07-31T02:23:17.965Z"
         },
         "repository": {
           "value": "https://github.com/adjective-rob/prelude.git",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.873Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "22340138319a8450"
         },
         "license": {
           "value": "MIT",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.873Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "529fc91e3f97d3b2"
         },
         "homepage": {
           "value": "https://github.com/adjective-rob/prelude#readme",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.873Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "1cea0cfbf4a706a0"
         },
         "team": {
@@ -73,7 +73,7 @@
             }
           ],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.873Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "cc75d3b127e610b7"
         },
         "goals": {
@@ -88,36 +88,36 @@
     },
     {
       "file": "stack.json",
-      "lastUpdated": "2026-07-31T03:14:22.874Z",
+      "lastUpdated": "2026-07-31T02:23:17.965Z",
       "fields": {
         "$schema": {
           "value": "https://adjective.us/prelude/schemas/v1/stack.schema.json",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "adef633ba50f2bc7"
         },
         "version": {
           "value": "1.0.0",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "39fe4a40977d0585"
         },
         "language": {
           "value": "TypeScript/JavaScript",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "97f1ab7620025b5f"
         },
         "runtime": {
           "value": "Node.js >=20.19.0",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "c3cbafd117634aaa"
         },
         "packageManager": {
           "value": "pnpm",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "fe4c98e05b16d76a"
         },
         "dependencies": {
@@ -130,7 +130,7 @@
             "zod": "^4.4.3"
           },
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "5ccaee003ee81bc7"
         },
         "devDependencies": {
@@ -146,13 +146,13 @@
             "vitest": "^4.1.10"
           },
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "e8b5f97f9713fb33"
         },
         "frameworks": {
           "value": [],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "4f53cda18c2baa0c"
         },
         "buildTools": {
@@ -160,7 +160,7 @@
             "Vite"
           ],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "f7ed022a06d9f6ea"
         },
         "testingFrameworks": {
@@ -168,13 +168,13 @@
             "Vitest"
           ],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "16233b4d39a0cf90"
         },
         "styling": {
           "value": [],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "4f53cda18c2baa0c"
         },
         "cicd": {
@@ -182,25 +182,25 @@
             "GitHub Actions"
           ],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "7ac9c1919f445f9c"
         }
       }
     },
     {
       "file": "architecture.json",
-      "lastUpdated": "2026-07-31T03:14:22.874Z",
+      "lastUpdated": "2026-07-31T02:23:17.965Z",
       "fields": {
         "$schema": {
           "value": "https://adjective.us/prelude/schemas/v1/architecture.schema.json",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "ca3684f77d69c5e6"
         },
         "version": {
           "value": "1.0.0",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "39fe4a40977d0585"
         },
         "directories": {
@@ -212,6 +212,44 @@
             {
               "path": "bin",
               "fileCount": 1
+            },
+            {
+              "path": "dist",
+              "fileCount": 2
+            },
+            {
+              "path": "dist/bin",
+              "fileCount": 4
+            },
+            {
+              "path": "dist/src",
+              "fileCount": 10
+            },
+            {
+              "path": "dist/src/commands",
+              "fileCount": 44
+            },
+            {
+              "path": "dist/src/core",
+              "fileCount": 40
+            },
+            {
+              "path": "dist/src/mcp",
+              "fileCount": 4
+            },
+            {
+              "path": "dist/src/runtime",
+              "fileCount": 4
+            },
+            {
+              "path": "dist/src/schema",
+              "fileCount": 32,
+              "purpose": "Data schemas"
+            },
+            {
+              "path": "dist/src/utils",
+              "fileCount": 12,
+              "purpose": "Utility functions"
             },
             {
               "path": "schemas",
@@ -255,13 +293,13 @@
             }
           ],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
-          "inferredHash": "e10c1b143801a1c9"
+          "lastInferred": "2026-07-31T02:23:17.965Z",
+          "inferredHash": "a3430c747c4f06a9"
         },
         "type": {
           "value": "cli",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "a11227468aefe839"
         },
         "patterns": {
@@ -269,7 +307,7 @@
             "Utility modules"
           ],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "f2ba994c7ff6a474"
         },
         "conventions": {
@@ -278,13 +316,13 @@
             "TypeScript strict mode"
           ],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "0e61393abb9f9236"
         },
         "entryPoints": {
           "value": [],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "4f53cda18c2baa0c"
         },
         "importPatterns": {
@@ -294,25 +332,25 @@
             ]
           },
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "0062b351be7dc686"
         }
       }
     },
     {
       "file": "constraints.json",
-      "lastUpdated": "2026-07-31T03:14:22.874Z",
+      "lastUpdated": "2026-07-31T02:23:17.965Z",
       "fields": {
         "$schema": {
           "value": "https://adjective.us/prelude/schemas/v1/constraints.schema.json",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "9cb17803d3eb061a"
         },
         "version": {
           "value": "1.0.0",
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "39fe4a40977d0585"
         },
         "mustUse": {
@@ -321,19 +359,19 @@
             "TypeScript strict mode"
           ],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "85c055c81dd21ec6"
         },
         "mustNotUse": {
           "value": [],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "4f53cda18c2baa0c"
         },
         "preferences": {
           "value": [],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "4f53cda18c2baa0c"
         },
         "testing": {
@@ -342,7 +380,7 @@
             "strategy": "Unit and integration tests"
           },
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "e8b174ba94d84b42"
         },
         "fileOrganization": {
@@ -350,7 +388,7 @@
             "All source code in src/ directory"
           ],
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "044bd45eb51a969a"
         },
         "documentation": {
@@ -359,7 +397,7 @@
             "style": "Markdown"
           },
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "6ccbaccd75587a3c"
         },
         "codeStyle": {
@@ -367,7 +405,7 @@
             "linter": "ESLint"
           },
           "source": "inferred",
-          "lastInferred": "2026-07-31T03:14:22.874Z",
+          "lastInferred": "2026-07-31T02:23:17.965Z",
           "inferredHash": "da5e267d4a121570"
         }
       }
