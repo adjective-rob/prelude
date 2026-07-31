@@ -33,7 +33,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "24"
 
       - name: Install prelude-context
         run: npm install -g prelude-context
@@ -42,7 +42,7 @@ jobs:
         run: prelude update
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "chore: update .context/ via Prelude"
           title: "chore: update .context/ via Prelude"
