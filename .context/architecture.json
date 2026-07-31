@@ -24,11 +24,11 @@
     },
     {
       "path": "dist/src/commands",
-      "fileCount": 40
+      "fileCount": 44
     },
     {
       "path": "dist/src/core",
-      "fileCount": 36
+      "fileCount": 40
     },
     {
       "path": "dist/src/mcp",
@@ -59,11 +59,11 @@
     },
     {
       "path": "src/commands",
-      "fileCount": 10
+      "fileCount": 11
     },
     {
       "path": "src/core",
-      "fileCount": 9
+      "fileCount": 10
     },
     {
       "path": "src/mcp",
@@ -85,7 +85,7 @@
     },
     {
       "path": "tests",
-      "fileCount": 4,
+      "fileCount": 7,
       "purpose": "Tests"
     }
   ],

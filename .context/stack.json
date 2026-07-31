@@ -26,5 +26,7 @@
     "Vitest"
   ],
   "styling": [],
-  "cicd": []
+  "cicd": [
+    "GitHub Actions"
+  ]
 }
