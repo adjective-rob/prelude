@@ -11,44 +11,6 @@
       "fileCount": 1
     },
     {
-      "path": "dist",
-      "fileCount": 2
-    },
-    {
-      "path": "dist/bin",
-      "fileCount": 4
-    },
-    {
-      "path": "dist/src",
-      "fileCount": 10
-    },
-    {
-      "path": "dist/src/commands",
-      "fileCount": 44
-    },
-    {
-      "path": "dist/src/core",
-      "fileCount": 40
-    },
-    {
-      "path": "dist/src/mcp",
-      "fileCount": 4
-    },
-    {
-      "path": "dist/src/runtime",
-      "fileCount": 4
-    },
-    {
-      "path": "dist/src/schema",
-      "fileCount": 32,
-      "purpose": "Data schemas"
-    },
-    {
-      "path": "dist/src/utils",
-      "fileCount": 12,
-      "purpose": "Utility functions"
-    },
-    {
       "path": "schemas",
       "fileCount": 7,
       "purpose": "Data schemas"
