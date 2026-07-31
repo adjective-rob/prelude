@@ -94,6 +94,7 @@
     "Utility modules"
   ],
   "conventions": [
+    "ESLint code linting",
     "TypeScript strict mode"
   ],
   "entryPoints": [],

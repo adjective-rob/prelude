@@ -17,5 +17,8 @@
   "documentation": {
     "required": true,
     "style": "Markdown"
+  },
+  "codeStyle": {
+    "linter": "ESLint"
   }
 }

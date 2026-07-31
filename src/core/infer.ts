@@ -129,7 +129,7 @@ function parsePyprojectToml(content: string): Record<string, any> {
 }
 
 function extractPyDepName(dep: string): string {
-  return dep.split(/[>=<!~\[;@ ]/)[0].trim().toLowerCase();
+  return dep.split(/[>=<!~[;@ ]/)[0].trim().toLowerCase();
 }
 
 function parseRequirementsTxt(content: string): string[] {
@@ -431,8 +431,8 @@ export async function inferStack(rootDir: string): Promise<Stack> {
                        pkg.workspaces;
     
     // --- THIS IS THE CRITICAL FIX ---
-    let allDeps: Record<string, string> = {};
-    
+    let allDeps: Record<string, string>;
+
     if (isMonorepo) {
       // Scan all packages in monorepo
       const packages = await scanMonorepoPackages(rootDir);

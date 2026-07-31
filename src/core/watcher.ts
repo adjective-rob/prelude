@@ -1,5 +1,6 @@
 import chokidar from 'chokidar';
-import { join } from 'path';
+import type { Stats } from 'fs';
+import { join, relative, isAbsolute, sep, basename } from 'path';
 import { writeJSON, readJSON, fileExists } from '../utils/fs.js';
 import { getCurrentTimestamp } from '../utils/time.js';
 import { CONTEXT_DIR, CONTEXT_FILES } from '../constants.js';
@@ -23,7 +24,8 @@ export function createWatcher(
   onChange: (files: string[], events: WatchEvent[]) => void,
   options: WatcherOptions = {}
 ) {
-  const patterns = [
+  // Top-level files worth watching (config + manifests + lockfiles).
+  const rootFiles = new Set([
     'package.json',
     'package-lock.json',
     'pnpm-lock.yaml',
@@ -38,31 +40,49 @@ export function createWatcher(
     '.prettierrc',
     '.prettierrc.json',
     'prettier.config.js',
-    'src/**/*',
-    'lib/**/*',
-    'app/**/*',
-    'pages/**/*',
-    'components/**/*',
     'requirements.txt',
     'pyproject.toml',
     'Cargo.toml',
     'go.mod'
-  ];
-  
-  const defaultIgnore = [
-    '**/node_modules/**',
-    '**/.git/**',
-    '**/dist/**',
-    '**/build/**',
-    '**/.next/**',
-    '**/.context/**',
-    '**/*.test.*',
-    '**/*.spec.*'
-  ];
-  
-  const watcher = chokidar.watch(patterns, {
-    cwd: rootDir,
-    ignored: [...defaultIgnore, ...(options.ignore || [])],
+  ]);
+
+  // Directories whose contents we recurse into.
+  const watchDirs = new Set(['src', 'lib', 'app', 'pages', 'components']);
+
+  // Directories we never descend into.
+  const ignoreDirs = new Set(['node_modules', '.git', 'dist', 'build', '.next', '.context']);
+
+  // chokidar 4 dropped glob support: `ignored` is now a predicate over paths.
+  // We watch the project root recursively and prune everything that isn't a
+  // watched root file or inside a watched source directory.
+  const userIgnores = options.ignore || [];
+  const isIgnored = (p: string, stats?: Stats): boolean => {
+    const abs = isAbsolute(p) ? p : join(rootDir, p);
+    const rel = relative(rootDir, abs);
+    if (rel === '' || rel.startsWith('..')) return false; // the root itself
+
+    const segments = rel.split(sep);
+    if (segments.some(s => ignoreDirs.has(s))) return true;
+    if (userIgnores.some(frag => rel.includes(frag))) return true;
+
+    const isFile = stats?.isFile() ?? false;
+    if (isFile && /\.(test|spec)\./.test(basename(abs))) return true;
+
+    const top = segments[0];
+    if (watchDirs.has(top)) return false; // descend into watched source trees
+
+    if (segments.length === 1) {
+      // Top-level entry: keep watched files, drop unlisted files/dirs.
+      if (stats?.isDirectory()) return true;
+      return !rootFiles.has(top);
+    }
+
+    // Anything deeper that isn't under a watched dir is noise.
+    return true;
+  };
+
+  const watcher = chokidar.watch(rootDir, {
+    ignored: isIgnored,
     persistent: !options.once,
     ignoreInitial: true,
     awaitWriteFinish: {
@@ -75,7 +95,10 @@ export function createWatcher(
   const events: WatchEvent[] = [];
   let debounceTimer: NodeJS.Timeout | null = null;
   
-  const handleChange = async (path: string, eventType: 'add' | 'change' | 'unlink') => {
+  const handleChange = async (rawPath: string, eventType: 'add' | 'change' | 'unlink') => {
+    // chokidar emits absolute paths (we watch an absolute root); keep the
+    // watchlog and callbacks relative to the project root as before.
+    const path = isAbsolute(rawPath) ? relative(rootDir, rawPath) : rawPath;
     changedFiles.add(path);
     
     const event: WatchEvent = {

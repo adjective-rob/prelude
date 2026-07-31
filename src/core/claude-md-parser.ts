@@ -175,7 +175,7 @@ function findSection(sections: Section[], keywords: string[]): Section | undefin
 
 function cleanProjectName(heading: string): string {
   // Remove common prefixes/suffixes like "CLAUDE.md —", "# ", version info
-  let name = heading
+  const name = heading
     .replace(/^CLAUDE\.md\s*[—–-]\s*/i, '')
     .replace(/\s*v\d+\.\d+(\.\d+)?$/i, '')
     .replace(/\s*[—–-]\s*.*$/, '') // Remove everything after em-dash

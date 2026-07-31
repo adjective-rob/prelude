@@ -61,7 +61,7 @@ export function registerDecisionCommand(cli: CAC) {
       }
       
       // Prompt for rationale if not provided
-      let rationale = options.rationale;
+      const rationale = options.rationale;
       if (!rationale) {
         logger.warn('No rationale provided. Please provide a brief explanation:');
         // In a real implementation, you'd use a prompt library like enquirer
