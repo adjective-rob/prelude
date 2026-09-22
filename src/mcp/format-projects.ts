@@ -44,12 +44,22 @@ export function formatProjectBlock(p: IndexedProject): string {
   if (endpoints.length > 0) {
     const total = p.apiEndpointCount ?? endpoints.length;
     const prefix = commonPrefix(endpoints.map(e => e.path));
-    const samples = endpoints.slice(0, MAX_ENDPOINT_SAMPLES).map(e => `${e.methods.join('/')} ${e.path}`);
+    let summary = `API: ${total} endpoint${total === 1 ? '' : 's'}`;
+    let pool = endpoints;
+    if (prefix) {
+      summary += ` under ${prefix}`;
+    } else {
+      // Mixed roots (/.well-known, /internal, /api/v1): name the dominant one
+      const dominant = p.apiPrefix;
+      if (dominant) {
+        const inPrefix = endpoints.filter(e => e.path.startsWith(dominant.prefix + '/'));
+        if (inPrefix.length > 0) pool = inPrefix;
+        summary += `, ${dominant.count} under ${dominant.prefix}`;
+      }
+    }
+    const samples = pool.slice(0, MAX_ENDPOINT_SAMPLES).map(e => `${e.methods.join('/')} ${e.path}`);
     const more = total - samples.length;
-    lines.push(
-      `API: ${total} endpoint${total === 1 ? '' : 's'}${prefix ? ` under ${prefix}` : ''} ` +
-      `(${samples.join(', ')}${more > 0 ? `, +${more}` : ''})`
-    );
+    lines.push(`${summary} (${samples.join(', ')}${more > 0 ? `, +${more}` : ''})`);
   }
 
   if (p.hubs?.length) {

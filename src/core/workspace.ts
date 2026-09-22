@@ -198,6 +198,23 @@ export async function readManifest(projectPath: string): Promise<Manifest> {
 
 // --- Index ---
 
+/** The most common two-segment prefix when it covers at least 40% of paths. */
+export function dominantPrefix(paths: string[]): { prefix: string; count: number } | undefined {
+  const counts = new Map<string, number>();
+  for (const path of paths) {
+    const segs = path.split('/').filter(Boolean);
+    if (segs.length < 3) continue;
+    const prefix = '/' + segs.slice(0, 2).join('/');
+    counts.set(prefix, (counts.get(prefix) ?? 0) + 1);
+  }
+  let best: { prefix: string; count: number } | undefined;
+  for (const [prefix, count] of counts) {
+    if (!best || count > best.count) best = { prefix, count };
+  }
+  return best && best.count / paths.length >= 0.4 ? best : undefined;
+}
+
+
 async function indexProject(entry: WorkspaceProject): Promise<{ indexed: IndexedProject; manifest: Manifest }> {
   const contextDir = resolveContextDir(entry.path);
   const base: IndexedProject = {
@@ -234,6 +251,8 @@ async function indexProject(entry: WorkspaceProject): Promise<{ indexed: Indexed
   if (endpoints.length > 0) {
     indexed.apiEndpoints = endpoints.slice(0, MAX_INDEXED_ENDPOINTS).map(e => ({ path: e.path, methods: e.methods, file: e.file }));
     indexed.apiEndpointCount = endpoints.length;
+    const dominant = dominantPrefix(endpoints.map(e => e.path));
+    if (dominant) indexed.apiPrefix = dominant;
   }
   if (map && Array.isArray(map.modules)) {
     indexed.hasMap = true;

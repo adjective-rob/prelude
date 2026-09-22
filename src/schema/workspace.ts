@@ -36,6 +36,7 @@ export const IndexedProjectSchema = z.object({
   entryPoints: z.array(z.object({ file: z.string(), purpose: z.string() })).optional(),
   apiEndpoints: z.array(z.object({ path: z.string(), methods: z.array(z.string()), file: z.string() })).optional(), // first 40
   apiEndpointCount: z.number().optional(),
+  apiPrefix: z.object({ prefix: z.string(), count: z.number() }).optional(), // dominant route prefix
   hubs: z.array(z.object({ file: z.string(), importedBy: z.number() })).optional(), // first 5
   modules: z.array(z.object({ path: z.string(), purpose: z.string().optional() })).optional(), // all, purpose only
   relatedProjects: z.array(RelatedProjectSchema).optional(),
