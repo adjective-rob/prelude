@@ -4,6 +4,7 @@ import { fileExists, readJSON, getDirectoryTree } from '../utils/fs.js';
 import { getCurrentTimestamp } from '../utils/time.js';
 import type { Project, Stack, Architecture, Constraints } from '../schema/index.js';
 import { scanSources } from './source-scanner.js';
+import { inferDirectoryPurpose } from './vocab.js';
 
 // --- ADD THESE CONSTANTS ---
 const PRELUDE_VERSION = "1.0.0";
@@ -1069,25 +1070,8 @@ export async function inferArchitecture(rootDir: string): Promise<Architecture> 
       try {
         const files = await readdir(fullPath);
         
-        // Determine purpose based on directory name
-        let purpose = undefined;
-        if (dir.includes('components')) purpose = 'UI components';
-        else if (dir.includes('pages')) purpose = 'Route pages';
-        else if (dir.includes('app')) purpose = 'Application code';
-        else if (dir.includes('lib') || dir.includes('utils')) purpose = 'Utility functions';
-        else if (dir.includes('hooks')) purpose = 'React hooks';
-        else if (dir.includes('context')) purpose = 'React context';
-        else if (dir.includes('store')) purpose = 'State management';
-        else if (dir.includes('api')) purpose = 'API routes';
-        else if (dir.includes('services')) purpose = 'Business logic';
-        else if (dir.includes('db') || dir.includes('database')) purpose = 'Database layer';
-        else if (dir.includes('schema')) purpose = 'Data schemas';
-        else if (dir.includes('types')) purpose = 'TypeScript types';
-        else if (dir.includes('config')) purpose = 'Configuration';
-        else if (dir.includes('public')) purpose = 'Static assets';
-        else if (dir.includes('styles')) purpose = 'Stylesheets';
-        else if (dir.includes('tests') || dir.includes('__tests__')) purpose = 'Tests';
-        
+        const purpose = inferDirectoryPurpose(dir);
+
         return {
           path: dir,
           fileCount: files.length,

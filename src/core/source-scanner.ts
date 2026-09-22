@@ -61,10 +61,10 @@ export interface KeyFileInfo {
 
 // --- Constants ---
 
-const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.py', '.rs', '.go']);
+export const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.rs', '.go']);
 const MAX_READ_LINES = 100;
 const MAX_READ_BYTES = 4096;
-const SKIP_DIRS = new Set([
+export const SKIP_DIRS = new Set([
   'node_modules', '.next', 'dist', 'build', '.git', '.context', 'coverage', '.turbo',
   '__pycache__', '.venv', 'venv', '.mypy_cache', '.ruff_cache', '.pytest_cache',
   'target', 'vendor',
