@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://adjective.us/prelude/schemas/v1/workspace.schema.json",
+  "title": "Prelude Workspace Schema",
+  "description": "Schema for ~/.prelude/workspace.json: a user-level, machine-local registry of projects served by `prelude serve --workspace`. Not committed to any repository.",
+  "type": "object",
+  "required": ["projects"],
+  "additionalProperties": true,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URI of the JSON Schema for this file",
+      "format": "uri"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the workspace format",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "projects": {
+      "type": "array",
+      "description": "Registered projects",
+      "items": {
+        "type": "object",
+        "required": ["name", "path", "addedAt"],
+        "additionalProperties": true,
+        "properties": {
+          "name": { "type": "string", "description": "Project name, from project.json or the directory name" },
+          "path": { "type": "string", "description": "Absolute path to the project root" },
+          "alias": { "type": "string", "description": "Short name used to address the project from agent tools" },
+          "addedAt": { "type": "string", "format": "date-time", "description": "When the project was registered" }
+        }
+      }
+    }
+  }
+}

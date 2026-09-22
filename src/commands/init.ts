@@ -16,6 +16,7 @@ import { resolveContextDir } from '../runtime/context.js';
 import { buildMap } from '../core/map-scanner.js';
 import { StateManager } from '../core/state-manager.js';
 import { trackMapFields } from '../core/merger.js';
+import { printWorkspaceHint } from './workspace.js';
 
 export function registerInitCommand(cli: CAC) {
   cli
@@ -168,6 +169,7 @@ export async function initContext(rootDir: string, options: InitOptions = {}): P
   logger.info('  • Run `prelude export` to generate LLM-optimized context');
   logger.info('  • Run `prelude watch` to track changes');
   logger.info('  • Run `prelude decision "Title"` to log a decision');
+  await printWorkspaceHint(rootDir);
 }
 
 /**

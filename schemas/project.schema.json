@@ -96,6 +96,34 @@
       "items": {
         "type": "string"
       }
+    },
+    "relatedProjects": {
+      "type": "array",
+      "description": "How this project relates to other codebases. Hand-written or recorded by an agent; preserved by prelude update.",
+      "items": {
+        "type": "object",
+        "required": ["name", "relation"],
+        "additionalProperties": true,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Workspace project name or alias of the related project"
+          },
+          "relation": {
+            "type": "string",
+            "enum": ["consumes", "provides", "shares-package", "sibling", "other"],
+            "description": "consumes: this project calls the other; provides: the other calls this; shares-package: imports it as a dependency; sibling: same product, no direct coupling; other"
+          },
+          "contract": {
+            "type": "string",
+            "description": "The interface between the two, e.g. 'REST /api/v1, Supabase JWT bearer'"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Anything else a future reader should know"
+          }
+        }
+      }
     }
   },
   "additionalProperties": true

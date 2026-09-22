@@ -154,6 +154,23 @@ All JSON files SHOULD include:
 - `outputs` (array): Project deliverables
 - `goals` (array): Project objectives
 - `constraints` (array): High-level constraints
+- `relatedProjects` (array): How this project relates to other codebases.
+  Each entry has `name` (the other project's workspace name or alias),
+  `relation`, and optional `contract` and `notes`.
+
+**Relation vocabulary:**
+
+| `relation` | Meaning |
+|---|---|
+| `consumes` | This project calls the other (e.g. a frontend calling an API) |
+| `provides` | The other project calls this one |
+| `shares-package` | This project imports the other as a dependency |
+| `sibling` | Same product, no direct coupling |
+| `other` | Anything else; explain in `notes` |
+
+`contract` names the interface in a few words (`"REST /api/v1, Supabase JWT
+bearer"`). `relatedProjects` is user-maintained: implementations MUST
+preserve it when regenerating `project.json`.
 
 **Example:**
 
@@ -174,6 +191,9 @@ All JSON files SHOULD include:
       "role": "Tech Lead",
       "email": "jane@example.com"
     }
+  ],
+  "relatedProjects": [
+    { "name": "backend", "relation": "consumes", "contract": "REST /api/v1, JWT bearer" }
   ]
 }
 ```

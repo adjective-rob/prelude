@@ -7,6 +7,7 @@ import { writeJSON } from '../utils/fs.js';
 import { logger } from '../utils/log.js';
 import { resolveContextDir } from '../runtime/context.js';
 import { CONTEXT_FILES } from '../constants.js';
+import { printWorkspaceHint } from './workspace.js';
 
 export interface UpdateOptions {
   force?: boolean;      // Write everything even when nothing drifted
@@ -109,6 +110,7 @@ export async function update(options: UpdateOptions = {}) {
         logger.success(`\n✅ Context updated successfully! (${diff.drift.length} changes applied)`);
         logger.info('ℹ️  Run `prelude export` to generate fresh output');
       }
+      await printWorkspaceHint(rootDir);
     }
 
   } catch (error: any) {

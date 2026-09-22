@@ -23,7 +23,7 @@ function setNested(obj: Record<string, any>, table: string, key: string, value: 
   current[key] = value;
 }
 
-function parsePyprojectToml(content: string): Record<string, any> {
+export function parsePyprojectToml(content: string): Record<string, any> {
   const result: Record<string, any> = {};
   let currentTable = '';
   let collectingArray: any[] | null = null;
@@ -129,7 +129,7 @@ function parsePyprojectToml(content: string): Record<string, any> {
   return result;
 }
 
-function extractPyDepName(dep: string): string {
+export function extractPyDepName(dep: string): string {
   return dep.split(/[>=<!~[;@ ]/)[0].trim().toLowerCase();
 }
 
