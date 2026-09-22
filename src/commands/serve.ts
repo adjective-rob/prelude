@@ -1,9 +1,8 @@
 import type { CAC } from 'cac';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createPreludeServer } from '../mcp/server.js';
-import { CONTEXT_DIR } from '../constants.js';
 import { fileExists } from '../utils/fs.js';
-import { join } from 'path';
+import { resolveContextDir } from '../runtime/context.js';
 
 export function registerServeCommand(cli: CAC) {
   cli
@@ -13,10 +12,7 @@ export function registerServeCommand(cli: CAC) {
       const rootDir = options.root || process.cwd();
 
       // Validate .context/ exists
-      const externalRoot = process.env.PRELUDE_ROOT;
-      const contextDir = externalRoot
-        ? join(externalRoot, rootDir.split('/').pop() as string)
-        : join(rootDir, CONTEXT_DIR);
+      const contextDir = resolveContextDir(rootDir);
 
       if (!(await fileExists(contextDir))) {
         // Write to stderr since stdout is the MCP transport

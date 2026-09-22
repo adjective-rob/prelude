@@ -5,6 +5,7 @@ import { ContextMerger, type MergeChange } from '../core/merger.js';
 import { inferProjectMetadata, inferStack, inferArchitecture, inferConstraints } from '../core/infer.js';
 import { readJSON, writeJSON } from '../utils/fs.js';
 import { logger } from '../utils/log.js';
+import { resolveContextDir } from '../runtime/context.js';
 import type { Project, Stack, Architecture, Constraints } from '../schema/index.js';
 
 export interface UpdateOptions {
@@ -18,11 +19,7 @@ export interface UpdateOptions {
  * Update context by re-analyzing codebase
  */
 export async function update(options: UpdateOptions = {}) {
-  const externalRoot = process.env.PRELUDE_ROOT;
-
-  const contextDir = externalRoot
-    ? join(externalRoot, process.cwd().split('/').pop() as string)
-    : '.context';
+  const contextDir = resolveContextDir(process.cwd());
   
   // Check if context exists
   if (!existsSync(contextDir)) {

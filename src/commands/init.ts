@@ -2,7 +2,7 @@ import type { CAC } from 'cac';
 import { join } from 'path';
 import { ensureDir, writeJSON, writeMarkdown, fileExists } from '../utils/fs.js';
 import { logger, spinner } from '../utils/log.js';
-import { CONTEXT_DIR, CONTEXT_FILES } from '../constants.js';
+import { CONTEXT_FILES } from '../constants.js';
 import {
   inferProjectMetadata,
   inferStack,
@@ -12,6 +12,7 @@ import {
 import { parseClaudeMd } from '../core/claude-md-parser.js';
 import type { ClaudeMdData } from '../core/claude-md-parser.js';
 import type { Project, Stack, Architecture, Constraints } from '../schema/index.js';
+import { resolveContextDir } from '../runtime/context.js';
 
 export function registerInitCommand(cli: CAC) {
   cli
@@ -21,15 +22,7 @@ export function registerInitCommand(cli: CAC) {
     .action(async (dir: string = process.cwd(), options: { force?: boolean; fromClaudeMd?: boolean | string }) => {
     const rootDir = dir;
 
-    // If PRELUDE_ROOT is set, use it as base for context storage.
-    // Otherwise default to repo-local .context/
-    const externalRoot = process.env.PRELUDE_ROOT;
-    console.log("DEBUG PRELUDE_ROOT:", externalRoot);
-    console.log("RUNTIME PRELUDE_ROOT:", process.env.PRELUDE_ROOT);
-
-const contextDir = externalRoot
-  ? join(externalRoot, rootDir.split('/').pop() as string)
-  : join(rootDir, CONTEXT_DIR);
+    const contextDir = resolveContextDir(rootDir);
       
       logger.init('Initializing Prelude context...');
       

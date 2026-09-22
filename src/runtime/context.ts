@@ -1,20 +1,20 @@
-import path from "path";
+import { join, resolve, basename } from 'path';
+import { CONTEXT_DIR } from '../constants.js';
 
-export function resolvePreludeRoot(): string {
-  if (process.env.PRELUDE_ROOT) {
-    return path.resolve(process.env.PRELUDE_ROOT);
+/**
+ * Resolve where a project's context lives.
+ * Embedded mode (default): <rootDir>/.context
+ * External brain mode (PRELUDE_ROOT set): <PRELUDE_ROOT>/<project basename>
+ */
+export function resolveContextDir(rootDir: string): string {
+  const externalRoot = process.env.PRELUDE_ROOT;
+  const absRoot = resolve(rootDir);
+  if (externalRoot) {
+    return join(resolve(externalRoot), basename(absRoot));
   }
-  return path.join(process.cwd(), ".context");
+  return join(absRoot, CONTEXT_DIR);
 }
 
-export function resolveProjectContextDir(projectName: string) {
-  const root = resolvePreludeRoot();
-
-  // If PRELUDE_ROOT is set → external brain mode
-  if (process.env.PRELUDE_ROOT) {
-    return path.join(root, projectName);
-  }
-
-  // Embedded mode
-  return root;
+export function isExternalBrainMode(): boolean {
+  return Boolean(process.env.PRELUDE_ROOT);
 }

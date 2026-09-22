@@ -1,7 +1,8 @@
 import { join } from 'path';
 import { writeJSON, readJSON, fileExists } from '../utils/fs.js';
 import { getCurrentTimestamp } from '../utils/time.js';
-import { CONTEXT_DIR, CONTEXT_FILES } from '../constants.js';
+import { CONTEXT_FILES } from '../constants.js';
+import { resolveContextDir } from '../runtime/context.js';
 import { inferProjectMetadata, inferStack, inferArchitecture, inferConstraints } from './infer.js';
 import type { Project, Stack, Architecture, Constraints } from '../schema/index.js';
 
@@ -18,7 +19,7 @@ export async function updateContext(rootDir: string, files: string[]): Promise<U
     errors: []
   };
   
-  const contextDir = join(rootDir, CONTEXT_DIR);
+  const contextDir = resolveContextDir(rootDir);
   
   // Determine what needs updating based on changed files
   const needsStackUpdate = files.some(f => 
@@ -103,7 +104,7 @@ export async function refreshAll(rootDir: string): Promise<UpdateResult> {
     errors: []
   };
   
-  const contextDir = join(rootDir, CONTEXT_DIR);
+  const contextDir = resolveContextDir(rootDir);
   
   try {
     const project = await inferProjectMetadata(rootDir);

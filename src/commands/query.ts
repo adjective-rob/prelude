@@ -1,10 +1,9 @@
 import type { CAC } from 'cac';
-import { join } from 'path';
 import { fileExists } from '../utils/fs.js';
 import { logger } from '../utils/log.js';
-import { CONTEXT_DIR } from '../constants.js';
 import { executeQuery, VALID_TYPES } from '../core/query-engine.js';
 import type { ContextType } from '../core/query-engine.js';
+import { resolveContextDir } from '../runtime/context.js';
 
 export function registerQueryCommand(cli: CAC) {
   cli
@@ -24,10 +23,7 @@ export function registerQueryCommand(cli: CAC) {
     ) => {
       const rootDir = process.cwd();
 
-      const externalRoot = process.env.PRELUDE_ROOT;
-      const contextDir = externalRoot
-        ? join(externalRoot, rootDir.split('/').pop() as string)
-        : join(rootDir, CONTEXT_DIR);
+      const contextDir = resolveContextDir(rootDir);
 
       if (!(await fileExists(contextDir))) {
         logger.error('.context/ directory not found. Run `prelude init` first.');

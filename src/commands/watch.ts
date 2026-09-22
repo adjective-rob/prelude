@@ -1,9 +1,8 @@
 import type { CAC } from 'cac';
-import { join } from 'path';
 import { fileExists } from '../utils/fs.js';
 import { logger } from '../utils/log.js';
-import { CONTEXT_DIR } from '../constants.js';
 import { createWatcher, watchOnce } from '../core/watcher.js';
+import { resolveContextDir } from '../runtime/context.js';
 
 export function registerWatchCommand(cli: CAC) {
   cli
@@ -12,10 +11,7 @@ export function registerWatchCommand(cli: CAC) {
     .option('--verbose', 'Show detailed logging')
     .action(async (dir: string = process.cwd(), options: { once?: boolean; verbose?: boolean }) => {
       const rootDir = dir;
-      const externalRoot = process.env.PRELUDE_ROOT;
-      const contextDir = externalRoot
-  ? join(externalRoot, rootDir.split('/').pop() as string)
-  : join(rootDir, CONTEXT_DIR);
+      const contextDir = resolveContextDir(rootDir);
       
       // Check if .context exists
       if (!(await fileExists(contextDir))) {

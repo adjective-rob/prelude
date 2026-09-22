@@ -5,9 +5,6 @@ import type { PreludeState, FileState, FieldState } from '../schema/state.js';
 import { createInitialState, trackField } from '../schema/state.js';
 import { ensureDir } from '../utils/fs.js';
 
-const STATE_DIR = '.context/.prelude';
-const STATE_FILE = join(STATE_DIR, 'state.json');
-const HISTORY_DIR = join(STATE_DIR, 'history');
 
 /**
  * Manages Prelude state tracking

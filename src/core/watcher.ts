@@ -3,7 +3,8 @@ import type { Stats } from 'fs';
 import { join, relative, isAbsolute, sep, basename } from 'path';
 import { writeJSON, readJSON, fileExists } from '../utils/fs.js';
 import { getCurrentTimestamp } from '../utils/time.js';
-import { CONTEXT_DIR, CONTEXT_FILES } from '../constants.js';
+import { CONTEXT_FILES } from '../constants.js';
+import { resolveContextDir } from '../runtime/context.js';
 import { updateContext } from './updater.js';
 
 export interface WatchEvent {
@@ -150,7 +151,7 @@ export function createWatcher(
 }
 
 async function logWatchEvents(rootDir: string, events: WatchEvent[]) {
-  const watchlogPath = join(rootDir, CONTEXT_DIR, CONTEXT_FILES.WATCHLOG);
+  const watchlogPath = join(resolveContextDir(rootDir), CONTEXT_FILES.WATCHLOG);
   
   let existingLogs: WatchEvent[] = [];
   if (await fileExists(watchlogPath)) {

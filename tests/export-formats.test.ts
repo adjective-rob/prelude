@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtemp, rm, readFile } from 'fs/promises';
-import { join } from 'path';
+import { mkdtemp, rm } from 'fs/promises';
+import { join, basename } from 'path';
 import { tmpdir } from 'os';
 import { writeJSON, ensureDir } from '../src/utils/fs.js';
 import { CONTEXT_DIR, CONTEXT_FILES } from '../src/constants.js';
-import { exportToClaudeMd } from '../src/core/exporter.js';
+import { exportToClaudeMd, exportToMarkdown } from '../src/core/exporter.js';
 
 describe('CLAUDE.md export format', () => {
   let tempDir: string;
@@ -103,5 +103,35 @@ describe('CLAUDE.md export format', () => {
     const content = await exportToClaudeMd(tempDir);
     expect(content).toContain('src/db.ts');
     expect(content).toContain('database connection');
+  });
+});
+
+describe('export in external brain mode (PRELUDE_ROOT)', () => {
+  let brainDir: string;
+  let projectDir: string;
+  const original = process.env.PRELUDE_ROOT;
+
+  beforeAll(async () => {
+    brainDir = await mkdtemp(join(tmpdir(), 'prelude-brain-'));
+    projectDir = await mkdtemp(join(tmpdir(), 'prelude-brain-project-'));
+    const contextDir = join(brainDir, basename(projectDir));
+    await ensureDir(contextDir);
+    await writeJSON(join(contextDir, CONTEXT_FILES.PROJECT), {
+      name: 'brain-project',
+      description: 'Lives in an external brain',
+    });
+  });
+
+  afterAll(async () => {
+    if (original === undefined) delete process.env.PRELUDE_ROOT;
+    else process.env.PRELUDE_ROOT = original;
+    await rm(brainDir, { recursive: true, force: true });
+    await rm(projectDir, { recursive: true, force: true });
+  });
+
+  it('exportToMarkdown reads context from PRELUDE_ROOT', async () => {
+    process.env.PRELUDE_ROOT = brainDir;
+    const content = await exportToMarkdown(projectDir);
+    expect(content).toContain('brain-project');
   });
 });

@@ -4,8 +4,9 @@ import { join } from 'path';
 import { executeQuery, VALID_TYPES } from '../core/query-engine.js';
 import { exportCompact } from '../core/compact.js';
 import { fileExists, readJSON } from '../utils/fs.js';
-import { CONTEXT_DIR, CONTEXT_FILES } from '../constants.js';
+import { CONTEXT_FILES } from '../constants.js';
 import type { ContextType } from '../core/query-engine.js';
+import { resolveContextDir } from '../runtime/context.js';
 
 export function createPreludeServer(rootDir: string): McpServer {
   const server = new McpServer({
@@ -82,10 +83,7 @@ export function createPreludeServer(rootDir: string): McpServer {
     {},
     async () => {
       try {
-        const externalRoot = process.env.PRELUDE_ROOT;
-        const contextDir = externalRoot
-          ? join(externalRoot, rootDir.split('/').pop() as string)
-          : join(rootDir, CONTEXT_DIR);
+        const contextDir = resolveContextDir(rootDir);
 
         const fileNames = [
           CONTEXT_FILES.PROJECT,
@@ -176,10 +174,7 @@ export function createPreludeServer(rootDir: string): McpServer {
         };
       }
 
-      const externalRoot = process.env.PRELUDE_ROOT;
-      const contextDir = externalRoot
-        ? join(externalRoot, rootDir.split('/').pop() as string)
-        : join(rootDir, CONTEXT_DIR);
+      const contextDir = resolveContextDir(rootDir);
 
       const filePath = join(contextDir, filename);
       if (!(await fileExists(filePath))) {

@@ -3,8 +3,9 @@ import { join } from 'path';
 import { readJSON, writeJSON, fileExists } from '../utils/fs.js';
 import { logger } from '../utils/log.js';
 import { getCurrentTimestamp, generateId } from '../utils/time.js';
-import { CONTEXT_DIR, CONTEXT_FILES } from '../constants.js';
+import { CONTEXT_FILES } from '../constants.js';
 import type { Decision, Decisions } from '../schema/index.js';
+import { resolveContextDir } from '../runtime/context.js';
 
 // Add these constants
 const PRELUDE_VERSION = "1.0.0";
@@ -33,11 +34,7 @@ export function registerDecisionCommand(cli: CAC) {
     ) => {
         const rootDir = dir;
 
-        const externalRoot = process.env.PRELUDE_ROOT;
-
-        const contextDir = externalRoot
-        ? join(externalRoot, rootDir.split('/').pop() as string)
-        : join(rootDir, CONTEXT_DIR);
+        const contextDir = resolveContextDir(rootDir);
 
         const decisionsPath = join(contextDir, CONTEXT_FILES.DECISIONS);
       

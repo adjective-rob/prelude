@@ -1,12 +1,11 @@
 import type { CAC } from 'cac';
-import { join } from 'path';
 import { readFile } from 'fs/promises';
 import { spawn, execSync } from 'child_process';
 import { platform } from 'os';
 import { fileExists } from '../utils/fs.js';
 import { logger, spinner } from '../utils/log.js';
-import { CONTEXT_DIR } from '../constants.js';
 import { saveExport } from '../core/exporter.js';
+import { resolveContextDir } from '../runtime/context.js';
 
 // Check if a command exists
 function commandExists(command: string): boolean {
@@ -85,12 +84,7 @@ export function registerExportCommand(cli: CAC) {
     }) => {
     const rootDir = dir;
 
-    const externalRoot = process.env.PRELUDE_ROOT;
-
-    const contextDir = externalRoot
-
-  ? join(externalRoot, rootDir.split('/').pop() as string)
-  : join(rootDir, CONTEXT_DIR);
+    const contextDir = resolveContextDir(rootDir);
 
       // Check if .context exists
       if (!(await fileExists(contextDir))) {

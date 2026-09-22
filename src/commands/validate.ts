@@ -3,7 +3,8 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { readJSON, fileExists } from '../utils/fs.js';
 import { logger } from '../utils/log.js';
-import { CONTEXT_DIR, CONTEXT_FILES } from '../constants.js';
+import { CONTEXT_FILES } from '../constants.js';
+import { resolveContextDir } from '../runtime/context.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -151,11 +152,7 @@ export function registerValidateCommand(cli: CAC) {
     .action(async (dir: string = process.cwd()) => {
       const rootDir = dir;
 
-      const externalRoot = process.env.PRELUDE_ROOT;
-
-      const contextDir = externalRoot
-        ? join(externalRoot, rootDir.split('/').pop() as string)
-        : join(rootDir, CONTEXT_DIR);
+      const contextDir = resolveContextDir(rootDir);
 
       // Check if .context exists
       if (!(await fileExists(contextDir))) {

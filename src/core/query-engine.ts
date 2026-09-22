@@ -1,7 +1,8 @@
 import { join } from 'path';
 import { readJSON, fileExists } from '../utils/fs.js';
-import { CONTEXT_DIR, CONTEXT_FILES } from '../constants.js';
+import { CONTEXT_FILES } from '../constants.js';
 import type { Project, Stack, Architecture, Constraints, Decisions } from '../schema/index.js';
+import { resolveContextDir } from '../runtime/context.js';
 
 // Roughly estimate tokens (1 token ≈ 4 characters for English text)
 function estimateTokens(text: string): number {
@@ -41,10 +42,7 @@ export interface QueryResult {
 
 // Load all context data from .context/ directory
 async function loadContext(rootDir: string): Promise<ContextData> {
-  const externalRoot = process.env.PRELUDE_ROOT;
-  const contextDir = externalRoot
-    ? join(externalRoot, rootDir.split('/').pop() as string)
-    : join(rootDir, CONTEXT_DIR);
+  const contextDir = resolveContextDir(rootDir);
 
   const data: ContextData = {};
 
@@ -620,10 +618,7 @@ export async function exportCompact(
   }
 
   // Load session history
-  const externalRoot = process.env.PRELUDE_ROOT;
-  const contextDir = externalRoot
-    ? join(externalRoot, rootDir.split('/').pop() as string)
-    : join(rootDir, CONTEXT_DIR);
+  const contextDir = resolveContextDir(rootDir);
   const sessionPath = join(contextDir, CONTEXT_FILES.SESSION);
   let sessionEntries: any[] = [];
   if (await fileExists(sessionPath)) {
