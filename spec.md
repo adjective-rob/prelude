@@ -86,6 +86,7 @@ This specification is implementation-independent. Multiple tools can read and wr
 ├── constraints.json      # Development constraints (RECOMMENDED)
 ├── decisions.json        # Architectural decisions log (RECOMMENDED)
 ├── session.json          # AI interaction sessions (OPTIONAL)
+├── map.json              # Code routing map (RECOMMENDED, GENERATED)
 ├── changelog.md          # Human-readable changelog (OPTIONAL)
 ├── export.md             # LLM-optimized export (GENERATED)
 ├── export.json           # Machine-readable export (GENERATED)
@@ -108,6 +109,7 @@ The following filenames are reserved and MUST NOT be used for custom files:
 - `constraints.json`
 - `decisions.json`
 - `session.json`
+- `map.json`
 - `export.md`
 - `export.json`
 - `.watchlog.json`
@@ -425,7 +427,80 @@ All JSON files SHOULD include:
 }
 ```
 
-### 4.8 export.md
+### 4.8 map.json
+
+**Purpose:** A routing index that tells an agent *where to look*: which
+modules exist, what each is for, what each file exports, what depends on
+what, and which files are the hubs to read first. It points at code; it
+never paraphrases it.
+
+**Required fields:** `$schema`, `version`, `stats` (`files`, `modules`,
+`edges`, `unresolvedImports`), `modules`. Each module requires `path`,
+`fileCount`, `files`. Each file requires `file`, `lang`, `lines`.
+
+**Optional fields:**
+
+- `stats.truncated` — the file cap was hit.
+- Module: `purpose` (short phrase), `notes` (free text, never inferred),
+  `truncated` (files capped to the highest ranked), `dependsOn`,
+  `dependedOnBy` (other module paths), `tests` (test files whose imports
+  resolve into the module).
+- File: `exports` (max 40, in source order), `imports` (resolved internal
+  targets; Go package targets end with `/`), `importedBy` (in-degree from
+  non-test files), `rank` (0–1, in-degree over the maximum, with a 0.5 floor
+  for declared entry points and key files), `role`, `isTest`.
+- `hubs` — up to 15 most-imported files with `importedBy`, `rank`, and the
+  first five `exports`.
+
+A module path is the file's directory truncated to at most three segments.
+Root-level files belong to module `.`.
+
+**Example (trimmed):**
+
+```json
+{
+  "$schema": "https://adjective.us/prelude/schemas/v1/map.schema.json",
+  "version": "1.0.0",
+  "stats": { "files": 3, "modules": 2, "edges": 2, "unresolvedImports": 0 },
+  "modules": [
+    {
+      "path": "src/core",
+      "purpose": "Core business logic",
+      "notes": "Start at merger.ts for anything touching prelude update.",
+      "fileCount": 2,
+      "files": [
+        { "file": "src/core/merger.ts", "lang": "ts", "lines": 349, "exports": ["ContextMerger"], "imports": ["src/utils/fs.ts"] },
+        { "file": "src/core/query-engine.ts", "lang": "ts", "lines": 653, "exports": ["executeQuery"], "imports": ["src/utils/fs.ts"] }
+      ],
+      "dependsOn": ["src/utils"]
+    },
+    {
+      "path": "src/utils",
+      "purpose": "Utility functions",
+      "fileCount": 1,
+      "files": [
+        { "file": "src/utils/fs.ts", "lang": "ts", "lines": 73, "exports": ["readJSON", "writeJSON"], "importedBy": 2, "rank": 1 }
+      ],
+      "dependedOnBy": ["src/core"]
+    }
+  ],
+  "hubs": [
+    { "file": "src/utils/fs.ts", "importedBy": 2, "rank": 1, "exports": ["readJSON", "writeJSON"] },
+    { "file": "src/core/merger.ts", "importedBy": 1, "rank": 0.5 }
+  ]
+}
+```
+
+**Manual overrides:** A module's `purpose` MAY be edited by hand, and
+`notes` MAY be added. Implementations MUST preserve a hand-edited `purpose`
+and all `notes` when regenerating the map. Everything else is regenerated.
+
+**Determinism:** `map.json` contains no timestamps. Every array is sorted
+(modules and files by path, hubs by `importedBy` descending then path), so
+regenerating an unchanged codebase produces a byte-identical file and a
+changed one produces a small, reviewable diff.
+
+### 4.9 export.md
 
 **Purpose:** Human-readable, LLM-optimized export of all context.
 
@@ -462,7 +537,7 @@ All JSON files SHOULD include:
 
 **This file is GENERATED** and should not be manually edited.
 
-### 4.9 export.json
+### 4.10 export.json
 
 **Purpose:** Machine-readable export of all context.
 

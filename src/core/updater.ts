@@ -4,7 +4,10 @@ import { getCurrentTimestamp } from '../utils/time.js';
 import { CONTEXT_FILES } from '../constants.js';
 import { resolveContextDir } from '../runtime/context.js';
 import { inferProjectMetadata, inferStack, inferArchitecture, inferConstraints } from './infer.js';
-import type { Project, Stack, Architecture, Constraints } from '../schema/index.js';
+import type { Project, Architecture, CodeMap } from '../schema/index.js';
+import { buildMap } from './map-scanner.js';
+import { StateManager } from './state-manager.js';
+import { ContextMerger, trackMapFields } from './merger.js';
 
 export interface UpdateResult {
   updated: string[];
@@ -62,6 +65,7 @@ export async function updateContext(rootDir: string, files: string[]): Promise<U
       const archPath = join(contextDir, CONTEXT_FILES.ARCHITECTURE);
       await writeJSON(archPath, architecture);
       result.updated.push('architecture.json');
+      await refreshMap(rootDir, contextDir, architecture, result);
     } catch (error) {
       result.errors.push(`Failed to update architecture: ${error}`);
     }
@@ -105,6 +109,7 @@ export async function refreshAll(rootDir: string): Promise<UpdateResult> {
   };
   
   const contextDir = resolveContextDir(rootDir);
+  let architecture: Architecture | undefined;
   
   try {
     const project = await inferProjectMetadata(rootDir);
@@ -123,12 +128,14 @@ export async function refreshAll(rootDir: string): Promise<UpdateResult> {
   }
   
   try {
-    const architecture = await inferArchitecture(rootDir);
+    architecture = await inferArchitecture(rootDir);
     await writeJSON(join(contextDir, CONTEXT_FILES.ARCHITECTURE), architecture);
     result.updated.push('architecture.json');
   } catch (error) {
     result.errors.push(`Failed to update architecture: ${error}`);
   }
+
+  await refreshMap(rootDir, contextDir, architecture, result);
   
   try {
     const constraints = await inferConstraints(rootDir);
@@ -139,4 +146,36 @@ export async function refreshAll(rootDir: string): Promise<UpdateResult> {
   }
   
   return result;
+}
+
+/**
+ * Rebuild map.json, merging so manual module purposes and notes survive
+ * watch mode.
+ */
+async function refreshMap(
+  rootDir: string,
+  contextDir: string,
+  architecture: Architecture | undefined,
+  result: UpdateResult
+): Promise<void> {
+  try {
+    const inferred = await buildMap(rootDir, { architecture });
+    const mapPath = join(contextDir, CONTEXT_FILES.MAP);
+    let existing: CodeMap | undefined;
+    if (await fileExists(mapPath)) {
+      try {
+        existing = await readJSON<CodeMap>(mapPath);
+      } catch {
+        existing = undefined;
+      }
+    }
+    const stateManager = new StateManager(contextDir);
+    const { merged } = new ContextMerger(stateManager).mergeMap(existing, inferred);
+    await writeJSON(mapPath, merged);
+    trackMapFields(stateManager, merged, inferred);
+    stateManager.save();
+    result.updated.push('map.json');
+  } catch (error) {
+    result.errors.push(`Failed to update map: ${error}`);
+  }
 }

@@ -13,124 +13,152 @@ import { parseClaudeMd } from '../core/claude-md-parser.js';
 import type { ClaudeMdData } from '../core/claude-md-parser.js';
 import type { Project, Stack, Architecture, Constraints } from '../schema/index.js';
 import { resolveContextDir } from '../runtime/context.js';
+import { buildMap } from '../core/map-scanner.js';
+import { StateManager } from '../core/state-manager.js';
+import { trackMapFields } from '../core/merger.js';
 
 export function registerInitCommand(cli: CAC) {
   cli
     .command('init [dir]', 'Initialize .context/ directory with inferred metadata')
     .option('--force', 'Overwrite existing .context/ directory')
     .option('--from-claude-md [path]', 'Bootstrap from a CLAUDE.md file')
-    .action(async (dir: string = process.cwd(), options: { force?: boolean; fromClaudeMd?: boolean | string }) => {
-    const rootDir = dir;
-
-    const contextDir = resolveContextDir(rootDir);
-      
-      logger.init('Initializing Prelude context...');
-      
-      // Check if .context already exists
+    .action(async (dir: string = process.cwd(), options: InitOptions) => {
+      const contextDir = resolveContextDir(dir);
       if (await fileExists(contextDir) && !options.force) {
         logger.error('.context/ directory already exists. Use --force to overwrite.');
         process.exit(1);
       }
-      
-      // Create .context directory
-      const spin = spinner('Creating .context/ directory...');
-      await ensureDir(contextDir);
-      spin.stop('✓ Created .context/ directory');
-
-      // Parse CLAUDE.md if requested
-      let claudeData: ClaudeMdData | undefined;
-      if (options.fromClaudeMd !== undefined) {
-        const claudeMdPath = typeof options.fromClaudeMd === 'string'
-          ? join(rootDir, options.fromClaudeMd)
-          : join(rootDir, 'CLAUDE.md');
-
-        if (await fileExists(claudeMdPath)) {
-          const claudeSpin = spinner(`Parsing ${typeof options.fromClaudeMd === 'string' ? options.fromClaudeMd : 'CLAUDE.md'}...`);
-          try {
-            claudeData = await parseClaudeMd(claudeMdPath);
-            claudeSpin.stop('✓ Parsed CLAUDE.md');
-          } catch (error) {
-            claudeSpin.stop();
-            logger.error(`Failed to parse CLAUDE.md: ${error}`);
-          }
-        } else {
-          logger.error(`CLAUDE.md not found at ${claudeMdPath}`);
-        }
-      }
-
-      // Infer and write project metadata
-      const projectSpin = spinner('Analyzing project metadata...');
-      try {
-        const project = await inferProjectMetadata(rootDir);
-        if (claudeData) {
-          mergeProjectData(project, claudeData);
-        }
-        await writeJSON(join(contextDir, CONTEXT_FILES.PROJECT), project);
-        projectSpin.stop('✓ Generated project.json');
-      } catch (error) {
-        projectSpin.stop();
-        logger.error(`Failed to generate project.json: ${error}`);
-      }
-
-      // Infer and write stack
-      const stackSpin = spinner('Detecting technology stack...');
-      try {
-        const stack = await inferStack(rootDir);
-        if (claudeData) {
-          mergeStackData(stack, claudeData);
-        }
-        await writeJSON(join(contextDir, CONTEXT_FILES.STACK), stack);
-        stackSpin.stop('✓ Generated stack.json');
-      } catch (error) {
-        stackSpin.stop();
-        logger.error(`Failed to generate stack.json: ${error}`);
-      }
-
-      // Infer and write architecture
-      const archSpin = spinner('Mapping architecture...');
-      try {
-        const architecture = await inferArchitecture(rootDir);
-        if (claudeData) {
-          mergeArchitectureData(architecture, claudeData);
-        }
-        await writeJSON(join(contextDir, CONTEXT_FILES.ARCHITECTURE), architecture);
-        archSpin.stop('✓ Generated architecture.json');
-      } catch (error) {
-        archSpin.stop();
-        logger.error(`Failed to generate architecture.json: ${error}`);
-      }
-
-      // Infer and write constraints
-      const constraintsSpin = spinner('Inferring constraints...');
-      try {
-        const constraints = await inferConstraints(rootDir);
-        if (claudeData) {
-          mergeConstraintsData(constraints, claudeData);
-        }
-        await writeJSON(join(contextDir, CONTEXT_FILES.CONSTRAINTS), constraints);
-        constraintsSpin.stop('✓ Generated constraints.json');
-      } catch (error) {
-        constraintsSpin.stop();
-        logger.error(`Failed to generate constraints.json: ${error}`);
-      }
-      
-      // Create empty decisions.json
-      await writeJSON(join(contextDir, CONTEXT_FILES.DECISIONS), { decisions: [] });
-      logger.success('✓ Created decisions.json');
-      
-      // Create empty changelog.md
-      await writeMarkdown(join(contextDir, CONTEXT_FILES.CHANGELOG), '# Changelog\n\n');
-      logger.success('✓ Created changelog.md');
-      
-      logger.success('🎉 Prelude context initialized successfully!');
-      if (claudeData) {
-        logger.info('  (enriched with CLAUDE.md data)');
-      }
-      logger.info('\nNext steps:');
-      logger.info('  • Run `prelude export` to generate LLM-optimized context');
-      logger.info('  • Run `prelude watch` to track changes');
-      logger.info('  • Run `prelude decision "Title"` to log a decision');
+      await initContext(dir, options);
     });
+}
+
+export interface InitOptions {
+  force?: boolean;
+  fromClaudeMd?: boolean | string;
+}
+
+/**
+ * Infer and write every context file for a project. The caller is
+ * responsible for the "already exists" check.
+ */
+export async function initContext(rootDir: string, options: InitOptions = {}): Promise<void> {
+  const contextDir = resolveContextDir(rootDir);
+
+  logger.init('Initializing Prelude context...');
+  
+  // Create .context directory
+  const spin = spinner('Creating .context/ directory...');
+  await ensureDir(contextDir);
+  spin.stop('✓ Created .context/ directory');
+
+  // Parse CLAUDE.md if requested
+  let claudeData: ClaudeMdData | undefined;
+  if (options.fromClaudeMd !== undefined) {
+    const claudeMdPath = typeof options.fromClaudeMd === 'string'
+      ? join(rootDir, options.fromClaudeMd)
+      : join(rootDir, 'CLAUDE.md');
+
+    if (await fileExists(claudeMdPath)) {
+      const claudeSpin = spinner(`Parsing ${typeof options.fromClaudeMd === 'string' ? options.fromClaudeMd : 'CLAUDE.md'}...`);
+      try {
+        claudeData = await parseClaudeMd(claudeMdPath);
+        claudeSpin.stop('✓ Parsed CLAUDE.md');
+      } catch (error) {
+        claudeSpin.stop();
+        logger.error(`Failed to parse CLAUDE.md: ${error}`);
+      }
+    } else {
+      logger.error(`CLAUDE.md not found at ${claudeMdPath}`);
+    }
+  }
+
+  // Infer and write project metadata
+  const projectSpin = spinner('Analyzing project metadata...');
+  try {
+    const project = await inferProjectMetadata(rootDir);
+    if (claudeData) {
+      mergeProjectData(project, claudeData);
+    }
+    await writeJSON(join(contextDir, CONTEXT_FILES.PROJECT), project);
+    projectSpin.stop('✓ Generated project.json');
+  } catch (error) {
+    projectSpin.stop();
+    logger.error(`Failed to generate project.json: ${error}`);
+  }
+
+  // Infer and write stack
+  const stackSpin = spinner('Detecting technology stack...');
+  try {
+    const stack = await inferStack(rootDir);
+    if (claudeData) {
+      mergeStackData(stack, claudeData);
+    }
+    await writeJSON(join(contextDir, CONTEXT_FILES.STACK), stack);
+    stackSpin.stop('✓ Generated stack.json');
+  } catch (error) {
+    stackSpin.stop();
+    logger.error(`Failed to generate stack.json: ${error}`);
+  }
+
+  // Infer and write architecture
+  let architecture: Architecture | undefined;
+  const archSpin = spinner('Mapping architecture...');
+  try {
+    architecture = await inferArchitecture(rootDir);
+    if (claudeData) {
+      mergeArchitectureData(architecture, claudeData);
+    }
+    await writeJSON(join(contextDir, CONTEXT_FILES.ARCHITECTURE), architecture);
+    archSpin.stop('✓ Generated architecture.json');
+  } catch (error) {
+    archSpin.stop();
+    logger.error(`Failed to generate architecture.json: ${error}`);
+  }
+
+  // Build and write the code map
+  const mapSpin = spinner('Building code map...');
+  try {
+    const map = await buildMap(rootDir, { architecture });
+    await writeJSON(join(contextDir, CONTEXT_FILES.MAP), map);
+    const stateManager = new StateManager(contextDir);
+    trackMapFields(stateManager, map, map);
+    stateManager.save();
+    mapSpin.stop(`✓ Generated map.json (${map.stats.files} files, ${map.stats.modules} modules)`);
+  } catch (error) {
+    mapSpin.stop();
+    logger.error(`Failed to generate map.json: ${error}`);
+  }
+
+  // Infer and write constraints
+  const constraintsSpin = spinner('Inferring constraints...');
+  try {
+    const constraints = await inferConstraints(rootDir);
+    if (claudeData) {
+      mergeConstraintsData(constraints, claudeData);
+    }
+    await writeJSON(join(contextDir, CONTEXT_FILES.CONSTRAINTS), constraints);
+    constraintsSpin.stop('✓ Generated constraints.json');
+  } catch (error) {
+    constraintsSpin.stop();
+    logger.error(`Failed to generate constraints.json: ${error}`);
+  }
+  
+  // Create empty decisions.json
+  await writeJSON(join(contextDir, CONTEXT_FILES.DECISIONS), { decisions: [] });
+  logger.success('✓ Created decisions.json');
+  
+  // Create empty changelog.md
+  await writeMarkdown(join(contextDir, CONTEXT_FILES.CHANGELOG), '# Changelog\n\n');
+  logger.success('✓ Created changelog.md');
+  
+  logger.success('🎉 Prelude context initialized successfully!');
+  if (claudeData) {
+    logger.info('  (enriched with CLAUDE.md data)');
+  }
+  logger.info('\nNext steps:');
+  logger.info('  • Run `prelude export` to generate LLM-optimized context');
+  logger.info('  • Run `prelude watch` to track changes');
+  logger.info('  • Run `prelude decision "Title"` to log a decision');
 }
 
 /**

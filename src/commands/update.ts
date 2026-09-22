@@ -1,12 +1,14 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { StateManager } from '../core/state-manager.js';
-import { ContextMerger, type MergeChange } from '../core/merger.js';
+import { ContextMerger, trackMapFields, type MergeChange } from '../core/merger.js';
+import { buildMap } from '../core/map-scanner.js';
 import { inferProjectMetadata, inferStack, inferArchitecture, inferConstraints } from '../core/infer.js';
 import { readJSON, writeJSON } from '../utils/fs.js';
 import { logger } from '../utils/log.js';
 import { resolveContextDir } from '../runtime/context.js';
-import type { Project, Stack, Architecture, Constraints } from '../schema/index.js';
+import { CONTEXT_FILES } from '../constants.js';
+import type { Project, Stack, Architecture, Constraints, CodeMap } from '../schema/index.js';
 
 export interface UpdateOptions {
   force?: boolean;      // Overwrite everything except decisions/changelog
@@ -49,6 +51,7 @@ export async function update(options: UpdateOptions = {}) {
       stack: await readJSON<Stack>(join(contextDir, 'stack.json')),
       architecture: await readJSON<Architecture>(join(contextDir, 'architecture.json')),
       constraints: await readJSON<Constraints>(join(contextDir, 'constraints.json')),
+      map: await readExistingMap(contextDir),
     };
 
     // Re-infer from codebase
@@ -62,10 +65,11 @@ export async function update(options: UpdateOptions = {}) {
       architecture: await inferArchitecture(process.cwd()),
       constraints: await inferConstraints(process.cwd()),
     };
+    const inferredMap = await safeBuildMap(process.cwd(), inferred.architecture);
 
     if (options.force) {
       // Force mode: overwrite everything except decisions/changelog
-      return await forceUpdate(contextDir, inferred, options);
+      return await forceUpdate(contextDir, { ...inferred, map: inferredMap }, options);
     }
 
     // Smart merge mode
@@ -75,16 +79,24 @@ export async function update(options: UpdateOptions = {}) {
     const stackResult = merger.mergeStack(existing.stack, inferred.stack);
     const architectureResult = merger.mergeArchitecture(existing.architecture, inferred.architecture);
     const constraintsResult = merger.mergeConstraints(existing.constraints, inferred.constraints);
+    const mapResult = inferredMap ? merger.mergeMap(existing.map, inferredMap) : undefined;
 
     const allChanges = [
       ...projectResult.changes.map(c => ({ file: 'project.json', ...c })),
       ...stackResult.changes.map(c => ({ file: 'stack.json', ...c })),
       ...architectureResult.changes.map(c => ({ file: 'architecture.json', ...c })),
       ...constraintsResult.changes.map(c => ({ file: 'constraints.json', ...c })),
+      ...(mapResult?.changes ?? []).map(c => ({ file: 'map.json', ...c })),
     ];
 
     // Show changes
     if (allChanges.length === 0) {
+      // Rank/export churn is not reported, but keep map.json current
+      if (!options.dryRun && mapResult && inferredMap) {
+        await writeJSON(join(contextDir, CONTEXT_FILES.MAP), mapResult.merged);
+        trackMapFields(stateManager, mapResult.merged, inferredMap);
+        stateManager.save();
+      }
       logger.success('✓ Context is up to date, no changes needed');
       return;
     }
@@ -113,13 +125,19 @@ export async function update(options: UpdateOptions = {}) {
     await writeJSON(join(contextDir, 'stack.json'), stackResult.merged);
     await writeJSON(join(contextDir, 'architecture.json'), architectureResult.merged);
     await writeJSON(join(contextDir, 'constraints.json'), constraintsResult.merged);
+    if (mapResult) {
+      await writeJSON(join(contextDir, CONTEXT_FILES.MAP), mapResult.merged);
+    }
 
     // Update state tracking
     trackAllFields(stateManager, 'project.json', projectResult.merged, inferred.project);
     trackAllFields(stateManager, 'stack.json', stackResult.merged, inferred.stack);
     trackAllFields(stateManager, 'architecture.json', architectureResult.merged, inferred.architecture);
     trackAllFields(stateManager, 'constraints.json', constraintsResult.merged, inferred.constraints);
-    
+    if (mapResult && inferredMap) {
+      trackMapFields(stateManager, mapResult.merged, inferredMap);
+    }
+
     stateManager.save();
 
     if (!options.silent) {
@@ -155,6 +173,7 @@ async function forceUpdate(
     stack: await safeReadJSON<Stack>(join(contextDir, 'stack.json')),
     architecture: await safeReadJSON<Architecture>(join(contextDir, 'architecture.json')),
     constraints: await safeReadJSON<Constraints>(join(contextDir, 'constraints.json')),
+    map: await readExistingMap(contextDir),
   };
 
   // Use the full ContextMerger for project (preserves name, description, team, goals).
@@ -171,11 +190,40 @@ async function forceUpdate(
   await writeJSON(join(contextDir, 'architecture.json'), archResult.merged);
   await writeJSON(join(contextDir, 'constraints.json'), constraintsResult.merged);
 
+  // Manual module purposes survive force, like project name does
+  if (inferred.map) {
+    const mapResult = merger.mergeMap(existing.map, inferred.map);
+    await writeJSON(join(contextDir, CONTEXT_FILES.MAP), mapResult.merged);
+    trackMapFields(stateManager, mapResult.merged, inferred.map);
+    stateManager.save();
+  }
+
   // Preserve decisions and changelog (they're already on disk)
 
   if (!options.silent) {
     logger.success('✅ Force update complete');
     logger.info('ℹ️  All context files overwritten (except decisions.json and changelog.md)');
+  }
+}
+
+/**
+ * Read map.json if present. Projects initialised before map.json existed
+ * have no file; treat that (or an empty object) as undefined.
+ */
+async function readExistingMap(contextDir: string): Promise<CodeMap | undefined> {
+  const map = await safeReadJSON<CodeMap>(join(contextDir, CONTEXT_FILES.MAP));
+  return map && Array.isArray(map.modules) ? map : undefined;
+}
+
+/**
+ * Build the code map, logging a warning instead of failing the update.
+ */
+async function safeBuildMap(rootDir: string, architecture: Architecture): Promise<CodeMap | undefined> {
+  try {
+    return await buildMap(rootDir, { architecture });
+  } catch (error) {
+    logger.warn(`Skipping map.json: ${error instanceof Error ? error.message : String(error)}`);
+    return undefined;
   }
 }
 

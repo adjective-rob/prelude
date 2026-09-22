@@ -378,6 +378,32 @@ See the [full specification →](./SPEC.md)
 
 All schemas are hosted at: `https://adjective.us/prelude/schemas/v1/`
 
+### The code map: `map.json`
+
+Alongside what a project *is*, Prelude records *where to look*. `prelude init`
+writes `.context/map.json`: every module with a short purpose, each file's
+exports, the resolved internal import graph (TypeScript/JavaScript, Python,
+Go, Rust), and the **hub** files most of the codebase depends on. It is
+deterministic (sorted arrays, no timestamps), so it diffs cleanly in git, and
+hand-edited module `purpose` and `notes` survive `prelude update`.
+
+```json
+{
+  "stats": { "files": 47, "modules": 10, "edges": 116, "unresolvedImports": 0 },
+  "modules": [
+    {
+      "path": "src/core",
+      "purpose": "Core business logic",
+      "fileCount": 12,
+      "files": [{ "file": "src/core/merger.ts", "lang": "ts", "lines": 349, "exports": ["ContextMerger"] }],
+      "dependsOn": ["src/schema", "src/utils"],
+      "tests": ["tests/merge-preserve.test.ts"]
+    }
+  ],
+  "hubs": [{ "file": "src/utils/fs.ts", "importedBy": 18, "rank": 1 }]
+}
+```
+
 ---
 
 ## Advanced Usage

@@ -18,9 +18,10 @@ const FILE_SCHEMA_MAP: Record<string, string> = {
   [CONTEXT_FILES.ARCHITECTURE]: 'architecture.schema.json',
   [CONTEXT_FILES.CONSTRAINTS]: 'constraints.schema.json',
   [CONTEXT_FILES.DECISIONS]: 'decisions.schema.json',
+  [CONTEXT_FILES.MAP]: 'map.schema.json',
 };
 
-interface ValidationError {
+export interface ValidationError {
   path: string;
   message: string;
 }
@@ -130,7 +131,7 @@ function validateValue(
   return errors;
 }
 
-function validateAgainstSchema(
+export function validateAgainstSchema(
   data: unknown,
   schema: Record<string, unknown>
 ): ValidationError[] {
@@ -144,6 +145,52 @@ async function getSchemasDir(): Promise<string> {
   const devPath = join(__dirname, '..', '..', 'schemas');
   if (await fileExists(devPath)) return devPath;
   return join(__dirname, '..', '..', '..', 'schemas');
+}
+
+export interface FileValidationResult {
+  file: string;
+  status: 'valid' | 'invalid' | 'skipped';
+  errors: ValidationError[];
+}
+
+/**
+ * Validate every known context file in a context directory against its
+ * JSON Schema. Missing files are reported as `skipped`, not errors.
+ */
+export async function validateContextDir(contextDir: string): Promise<FileValidationResult[]> {
+  const schemasDir = await getSchemasDir();
+  const results: FileValidationResult[] = [];
+
+  for (const [contextFile, schemaFile] of Object.entries(FILE_SCHEMA_MAP)) {
+    const filePath = join(contextDir, contextFile);
+    const schemaPath = join(schemasDir, schemaFile);
+
+    if (!(await fileExists(filePath))) {
+      results.push({ file: contextFile, status: 'skipped', errors: [] });
+      continue;
+    }
+
+    let schema: Record<string, unknown>;
+    try {
+      schema = await readJSON<Record<string, unknown>>(schemaPath);
+    } catch {
+      results.push({ file: contextFile, status: 'invalid', errors: [{ path: '', message: `Failed to load schema: ${schemaFile}` }] });
+      continue;
+    }
+
+    let data: unknown;
+    try {
+      data = await readJSON<unknown>(filePath);
+    } catch (error) {
+      results.push({ file: contextFile, status: 'invalid', errors: [{ path: '', message: `Invalid JSON — ${error}` }] });
+      continue;
+    }
+
+    const errors = validateAgainstSchema(data, schema);
+    results.push({ file: contextFile, status: errors.length === 0 ? 'valid' : 'invalid', errors });
+  }
+
+  return results;
 }
 
 export function registerValidateCommand(cli: CAC) {
@@ -160,56 +207,19 @@ export function registerValidateCommand(cli: CAC) {
         process.exit(1);
       }
 
-      const schemasDir = await getSchemasDir();
+      const results = await validateContextDir(contextDir);
+      const totalFiles = results.filter(r => r.status !== 'skipped').length;
+      const failedFiles = results.filter(r => r.status === 'invalid').length;
+      const skippedFiles = results.filter(r => r.status === 'skipped').length;
 
-      let totalFiles = 0;
-      let passedFiles = 0;
-      let failedFiles = 0;
-      let skippedFiles = 0;
-
-      for (const [contextFile, schemaFile] of Object.entries(FILE_SCHEMA_MAP)) {
-        const filePath = join(contextDir, contextFile);
-        const schemaPath = join(schemasDir, schemaFile);
-
-        // Skip files that don't exist
-        if (!(await fileExists(filePath))) {
-          skippedFiles++;
-          logger.warn(`Skipped ${contextFile} (file not found)`);
-          continue;
-        }
-
-        totalFiles++;
-
-        // Load schema
-        let schema: Record<string, unknown>;
-        try {
-          schema = await readJSON<Record<string, unknown>>(schemaPath);
-        } catch {
-          failedFiles++;
-          logger.error(`Failed to load schema: ${schemaFile}`);
-          continue;
-        }
-
-        // Load and parse context file
-        let data: unknown;
-        try {
-          data = await readJSON<unknown>(filePath);
-        } catch (error) {
-          failedFiles++;
-          logger.error(`${contextFile}: Invalid JSON — ${error}`);
-          continue;
-        }
-
-        // Validate
-        const errors = validateAgainstSchema(data, schema);
-
-        if (errors.length === 0) {
-          passedFiles++;
-          logger.success(`${contextFile} — valid`);
+      for (const r of results) {
+        if (r.status === 'skipped') {
+          logger.warn(`Skipped ${r.file} (file not found)`);
+        } else if (r.status === 'valid') {
+          logger.success(`${r.file} — valid`);
         } else {
-          failedFiles++;
-          logger.error(`${contextFile} — ${errors.length} error(s):`);
-          for (const err of errors) {
+          logger.error(`${r.file} — ${r.errors.length} error(s):`);
+          for (const err of r.errors) {
             logger.info(`  ${err.path || '(root)'}: ${err.message}`);
           }
         }

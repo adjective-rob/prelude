@@ -7,6 +7,7 @@ export const CONTEXT_FILES = {
   CONSTRAINTS: 'constraints.json',
   DECISIONS: 'decisions.json',
   SESSION: 'session.json',
+  MAP: 'map.json',
   CHANGELOG: 'changelog.md',
   EXPORT_MD: 'export.md',
   EXPORT_JSON: 'export.json',

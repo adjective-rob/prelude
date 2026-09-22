@@ -1,5 +1,7 @@
 import type { StateManager } from './state-manager.js';
-import type { Project, Stack, Architecture, Constraints } from '../schema/index.js';
+import type { Project, Stack, Architecture, Constraints, CodeMap } from '../schema/index.js';
+
+const MAP_FILE = 'map.json';
 
 /**
  * Strategies for merging different types of content
@@ -329,6 +331,98 @@ export class ContextMerger {
   }
 
   /**
+   * Merge the code map. Inferred structure always wins; hand-written module
+   * `notes` and manually edited `purpose` values are carried forward.
+   * Only structural changes are reported (modules, file sets, hub order);
+   * rank/importedBy/lines/exports churn is deliberately silent.
+   */
+  mergeMap(existing: CodeMap | undefined, inferred: CodeMap): MergeResult<CodeMap> {
+    if (!existing || !Array.isArray(existing.modules)) {
+      return {
+        merged: inferred,
+        changes: [{ field: 'map', type: 'added', reason: 'Code map generated' }],
+      };
+    }
+
+    const changes: MergeChange[] = [];
+    const existingByPath = new Map(existing.modules.map(m => [m.path, m]));
+    const inferredPaths = new Set(inferred.modules.map(m => m.path));
+
+    const modules = inferred.modules.map(mod => {
+      const prev = existingByPath.get(mod.path);
+      if (!prev) {
+        changes.push({ field: `modules.${mod.path}`, type: 'added', newValue: mod.path, reason: 'New module detected' });
+        return mod;
+      }
+
+      const next = { ...mod };
+      const purposePath = `modules.${mod.path}.purpose`;
+      let keepPurpose = false;
+
+      if (prev.purpose !== undefined && prev.purpose !== mod.purpose) {
+        if (this.stateManager.isManuallyEdited(MAP_FILE, purposePath)) {
+          keepPurpose = true;
+        } else if (
+          this.stateManager.getFieldState(MAP_FILE, purposePath) &&
+          this.stateManager.hasInferredChanged(MAP_FILE, purposePath, prev.purpose)
+        ) {
+          // The JSON no longer matches what we last inferred: a hand edit.
+          keepPurpose = true;
+          this.stateManager.trackManual(MAP_FILE, purposePath, prev.purpose);
+        }
+      }
+
+      if (keepPurpose) {
+        next.purpose = prev.purpose;
+        changes.push({
+          field: purposePath,
+          type: 'preserved',
+          oldValue: mod.purpose,
+          newValue: prev.purpose,
+          reason: 'Manually edited purpose preserved',
+        });
+      }
+      if (prev.notes) next.notes = prev.notes;
+
+      const prevFiles = new Set(prev.files.map(f => f.file));
+      const nextFiles = new Set(mod.files.map(f => f.file));
+      const removed = [...prevFiles].filter(f => !nextFiles.has(f)).sort();
+      const added = [...nextFiles].filter(f => !prevFiles.has(f)).sort();
+      if (removed.length > 0 || added.length > 0) {
+        changes.push({
+          field: `modules.${mod.path}.files`,
+          type: 'modified',
+          oldValue: removed,
+          newValue: added,
+          reason: 'Files added or removed',
+        });
+      }
+
+      return orderModuleKeys(next);
+    });
+
+    for (const prev of existing.modules) {
+      if (!inferredPaths.has(prev.path)) {
+        changes.push({ field: `modules.${prev.path}`, type: 'removed', oldValue: prev.path, reason: 'Module no longer exists' });
+      }
+    }
+
+    const prevHubs = (existing.hubs ?? []).map(h => h.file);
+    const nextHubs = (inferred.hubs ?? []).map(h => h.file);
+    if (JSON.stringify(prevHubs) !== JSON.stringify(nextHubs)) {
+      changes.push({
+        field: 'hubs',
+        type: 'modified',
+        oldValue: prevHubs.slice(0, 5),
+        newValue: nextHubs.slice(0, 5),
+        reason: 'Hub ranking changed',
+      });
+    }
+
+    return { merged: { ...inferred, modules }, changes };
+  }
+
+  /**
    * Helper to get nested value by path
    */
   private getNestedValue(obj: any, path: string): any {
@@ -346,5 +440,39 @@ export class ContextMerger {
       return curr[key];
     }, obj);
     target[lastKey] = value;
+  }
+}
+
+/** Keep a stable key order so notes/purpose land next to path in map.json. */
+function orderModuleKeys<T extends CodeMap['modules'][number]>(mod: T): T {
+  const { path, purpose, notes, fileCount, truncated, files, dependsOn, dependedOnBy, tests, ...rest } = mod;
+  return {
+    path,
+    ...(purpose !== undefined ? { purpose } : {}),
+    ...(notes !== undefined ? { notes } : {}),
+    fileCount,
+    ...(truncated ? { truncated } : {}),
+    files,
+    ...(dependsOn ? { dependsOn } : {}),
+    ...(dependedOnBy ? { dependedOnBy } : {}),
+    ...(tests ? { tests } : {}),
+    ...rest,
+  } as T;
+}
+
+/**
+ * Track map module purposes in state. Only `modules.<path>.purpose` is
+ * tracked; the rest of the map is regenerated wholesale on every update.
+ */
+export function trackMapFields(stateManager: StateManager, merged: CodeMap, inferred: CodeMap): void {
+  const inferredByPath = new Map(inferred.modules.map(m => [m.path, m]));
+  for (const mod of merged.modules) {
+    const path = `modules.${mod.path}.purpose`;
+    const inferredPurpose = inferredByPath.get(mod.path)?.purpose;
+    if (mod.purpose === inferredPurpose) {
+      stateManager.trackInferred(MAP_FILE, path, mod.purpose ?? null);
+    } else {
+      stateManager.trackManual(MAP_FILE, path, mod.purpose ?? null);
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { readdir, readFile, stat } from 'fs/promises';
 import { join, extname, basename, posix } from 'path';
-import type { Architecture } from '../schema/index.js';
+import type { Architecture, MapLang, MapFile, MapModule, MapHub, CodeMap } from '../schema/index.js';
 import { SKIP_DIRS, SOURCE_EXTENSIONS } from './source-scanner.js';
 import { inferDirectoryPurpose } from './vocab.js';
 
@@ -29,52 +29,7 @@ const MAX_HUBS = 15;
 const MODULE_DEPTH = 3;
 const READ_BATCH = 32;
 
-export type MapLang = 'ts' | 'js' | 'py' | 'go' | 'rs';
-
-export interface MapFile {
-  file: string;          // repo-relative, forward slashes
-  lang: MapLang;
-  lines: number;
-  exports?: string[];    // ≤ 40, in order of first appearance, deduped
-  imports?: string[];    // resolved internal targets only, sorted, deduped
-  importedBy?: number;   // in-degree from non-test files; omitted when 0
-  rank?: number;         // 0..1, two decimals; omitted when 0
-  role?: string;         // from architecture.keyFiles / entryPoints when provided
-  isTest?: boolean;      // omitted when false
-}
-
-export interface MapModule {
-  path: string;          // directory, '.' for root-level files
-  purpose?: string;
-  notes?: string;        // never inferred; preserved by merger
-  fileCount: number;
-  truncated?: boolean;   // files[] was capped
-  files: MapFile[];
-  dependsOn?: string[];  // module paths, sorted
-  dependedOnBy?: string[];
-  tests?: string[];      // test files whose imports resolve into this module
-}
-
-export interface MapHub {
-  file: string;
-  importedBy: number;
-  rank: number;
-  exports?: string[];    // first 5
-}
-
-export interface CodeMap {
-  $schema: string;
-  version: string;
-  stats: {
-    files: number;
-    modules: number;
-    edges: number;             // resolved import edges
-    unresolvedImports: number; // internal-looking imports we could not resolve
-    truncated?: boolean;       // file cap hit
-  };
-  modules: MapModule[];  // sorted by path
-  hubs?: MapHub[];       // top 15 by importedBy desc, then path; omitted when empty
-}
+export type { MapLang, MapFile, MapModule, MapHub, CodeMap };
 
 export interface BuildMapOptions {
   architecture?: Architecture;   // for role tagging and entry-point rank bonus

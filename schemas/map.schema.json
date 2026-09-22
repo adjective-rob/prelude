@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://adjective.us/prelude/schemas/v1/map.schema.json",
+  "title": "Prelude Map Schema",
+  "description": "Schema for Prelude map.json: a deterministic routing index of a codebase's modules, files, exports, and internal import graph. Pointers, not truth: it tells an agent where to look.",
+  "type": "object",
+  "required": ["$schema", "version", "stats", "modules"],
+  "additionalProperties": true,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URI of the JSON Schema for this file",
+      "format": "uri"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the map format",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "stats": {
+      "type": "object",
+      "description": "Summary counts for the scan",
+      "required": ["files", "modules", "edges", "unresolvedImports"],
+      "additionalProperties": true,
+      "properties": {
+        "files": { "type": "integer", "minimum": 0, "description": "Source files scanned" },
+        "modules": { "type": "integer", "minimum": 0, "description": "Number of modules" },
+        "edges": { "type": "integer", "minimum": 0, "description": "Resolved internal import edges" },
+        "unresolvedImports": { "type": "integer", "minimum": 0, "description": "Internal-looking imports that could not be resolved to a file" },
+        "truncated": { "type": "boolean", "description": "True when the file cap was hit" }
+      }
+    },
+    "modules": {
+      "type": "array",
+      "description": "Directories that group source files, sorted by path. A module path is a directory truncated to at most three segments; '.' holds root-level files.",
+      "items": {
+        "type": "object",
+        "required": ["path", "fileCount", "files"],
+        "additionalProperties": true,
+        "properties": {
+          "path": { "type": "string", "description": "Module directory relative to the project root" },
+          "purpose": { "type": "string", "description": "Short phrase describing what the module is for. Inferred from the directory name or its exports; a hand-edited purpose is preserved by prelude update." },
+          "notes": { "type": "string", "description": "Free-form notes written by a human or agent. Never inferred; always preserved." },
+          "fileCount": { "type": "integer", "minimum": 0, "description": "Number of source files in the module before any cap" },
+          "truncated": { "type": "boolean", "description": "True when files[] was capped to the highest-ranked files" },
+          "files": {
+            "type": "array",
+            "description": "Source files in the module, sorted by path",
+            "items": {
+              "type": "object",
+              "required": ["file", "lang", "lines"],
+              "additionalProperties": true,
+              "properties": {
+                "file": { "type": "string", "description": "File path relative to the project root, forward slashes" },
+                "lang": { "type": "string", "enum": ["ts", "js", "py", "go", "rs"], "description": "Source language" },
+                "lines": { "type": "integer", "minimum": 0, "description": "Line count" },
+                "exports": { "type": "array", "items": { "type": "string" }, "description": "Exported names in order of first appearance (max 40)" },
+                "imports": { "type": "array", "items": { "type": "string" }, "description": "Resolved internal import targets. Go package targets end with '/'." },
+                "importedBy": { "type": "integer", "minimum": 0, "description": "Number of non-test files that import this file (in-degree)" },
+                "rank": { "type": "number", "minimum": 0, "maximum": 1, "description": "Importance from 0 to 1: in-degree divided by the maximum in-degree, with a 0.5 floor for declared entry points and key files" },
+                "role": { "type": "string", "description": "Role copied from architecture.json entryPoints or keyFiles" },
+                "isTest": { "type": "boolean", "description": "True for test files" }
+              }
+            }
+          },
+          "dependsOn": { "type": "array", "items": { "type": "string" }, "description": "Other modules that this module's non-test files import from" },
+          "dependedOnBy": { "type": "array", "items": { "type": "string" }, "description": "Other modules whose non-test files import from this module" },
+          "tests": { "type": "array", "items": { "type": "string" }, "description": "Test files whose imports resolve into this module" }
+        }
+      }
+    },
+    "hubs": {
+      "type": "array",
+      "description": "The most-imported files, sorted by importedBy then path (max 15). Read these first in an unfamiliar codebase.",
+      "items": {
+        "type": "object",
+        "required": ["file", "importedBy", "rank"],
+        "additionalProperties": true,
+        "properties": {
+          "file": { "type": "string" },
+          "importedBy": { "type": "integer", "minimum": 0, "description": "Number of non-test files that import this file" },
+          "rank": { "type": "number", "minimum": 0, "maximum": 1, "description": "Importance from 0 to 1" },
+          "exports": { "type": "array", "items": { "type": "string" }, "description": "First five exports" }
+        }
+      }
+    }
+  }
+}
