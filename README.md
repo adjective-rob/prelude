@@ -189,11 +189,42 @@ prelude query --type stack --max-tokens 500 # budget-capped output
 |------|-------------|
 | `<topic>` | Deep-search keyword across all context files |
 | `--scope <path>` | Filter to architecture/constraints relevant to a directory |
-| `--type <type>` | Return only one context type: `project`, `stack`, `architecture`, `constraints`, or `decisions` |
+| `--type <type>` | Return only one context type: `project`, `stack`, `architecture`, `constraints`, `decisions`, or `map` |
 | `--format <md\|json>` | Output format (default: `md`) |
 | `--max-tokens <n>` | Truncate output to fit a token budget |
 
 Output goes to stdout (pipe-friendly), token estimate to stderr. At least one filter (topic, scope, or type) is required.
+
+### `prelude locate <query...>`
+Turns a task phrase into the files most likely relevant, with the reason each was chosen. Keyword scoring over `map.json` exports, paths, module purposes, roles, and decisions that mention files. No embeddings, no network.
+```bash
+prelude locate billing checkout webhook
+prelude locate mcp server tools --limit 3
+prelude locate "query engine" --scope src/core --format json
+```
+
+```
+1. src/mcp/server.ts  ·  src/mcp (MCP server)  ·  score 14
+   exports: createPreludeServer
+   why: path mcp, module: MCP server, export createPreludeServer, file server
+```
+
+| Flag | Description |
+|------|-------------|
+| `--limit <n>` | Maximum files to return (default 8) |
+| `--scope <dir>` | Only consider files under this directory |
+| `--tests` | Include test files (default: only when the query mentions tests) |
+| `--format <text\|json>` | Output format (default: `text`) |
+
+When nothing matches, Prelude prints the hub files as a place to start.
+
+### `prelude annotate <module>`
+Corrects or enriches what `map.json` says about a module. Manual purposes and notes are never overwritten by `prelude update`.
+```bash
+prelude annotate src/core --purpose "Inference, merge, query and export engine"
+prelude annotate src/core --notes "Regex heuristics only, no AST"
+prelude annotate src/core --clear-notes
+```
 
 ### `prelude watch`
 Tracks development sessions:
@@ -233,21 +264,26 @@ Prelude can run as an [MCP](https://modelcontextprotocol.io/) (Model Context Pro
 prelude mcp-config --client claude-code
 ```
 
-This prints the command to register Prelude as an MCP server. Once connected, your AI tools have access to three tools:
+This prints the command to register Prelude as an MCP server. Once connected, your AI tools have access to seven tools:
 
 | Tool | Description |
 |------|-------------|
+| `prelude_compact` | Token-efficient overview for prompt injection (~800 tokens), including the `[map]` line |
+| `prelude_locate` | Find the files most relevant to a task phrase, with reasons. Call before grepping |
+| `prelude_map` | Inspect the code map: hubs and modules, one module in detail, or one file's exports and importers |
 | `prelude_query` | Full-power context queries with topic, scope, and type filtering |
-| `prelude_compact` | Token-efficient context for prompt injection (~800 tokens) |
+| `prelude_record_decision` | Record an architectural decision in `decisions.json` so future sessions inherit it |
+| `prelude_annotate_module` | Correct a module's purpose or add notes in `map.json`; never overwritten by update |
 | `prelude_status` | Check which context files are available |
 
-And three resources for passive context discovery:
+And four resources for passive context discovery:
 
 | Resource URI | Description |
 |-------------|-------------|
 | `prelude://context/full` | Complete project context as markdown |
 | `prelude://context/compact` | Token-efficient summary |
-| `prelude://context/{type}` | Individual context files (project, stack, architecture, constraints, decisions) |
+| `prelude://context/map` | The code map (`map.json`) |
+| `prelude://context/{type}` | Individual context files (project, stack, architecture, constraints, decisions, map) |
 
 ### Other Clients
 

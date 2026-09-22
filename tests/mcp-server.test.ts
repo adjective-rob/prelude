@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtemp, writeFile, mkdir, rm } from 'fs/promises';
+import { mkdtemp, writeFile, mkdir, rm, readFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createPreludeServer } from '../src/mcp/server.js';
+import { StateManager } from '../src/core/state-manager.js';
+import { ContextMerger } from '../src/core/merger.js';
 
 describe('Prelude MCP Server', () => {
   let tmpDir: string;
@@ -155,5 +157,149 @@ describe('Prelude MCP Server', () => {
     const result = await client.readResource({ uri: 'prelude://context/invalid' });
     const content = result.contents[0];
     expect(content.text).toContain('Unknown context type');
+  });
+});
+
+describe('Prelude MCP Server — map, locate, and write tools', () => {
+  let tmpDir: string;
+  let contextDir: string;
+  let client: Client;
+
+  const f = (file: string, extra: Record<string, unknown> = {}) => ({ file, lang: 'ts', lines: 100, ...extra });
+  const mapFixture = {
+    $schema: 'https://adjective.us/prelude/schemas/v1/map.schema.json',
+    version: '1.0.0',
+    stats: { files: 5, modules: 3, edges: 4, unresolvedImports: 0 },
+    modules: [
+      {
+        path: 'src/core',
+        purpose: 'Core business logic',
+        fileCount: 2,
+        files: [
+          f('src/core/merger.ts', { exports: ['ContextMerger', 'MergeResult'], imports: ['src/utils/fs.ts'], importedBy: 1, rank: 0.5 }),
+          f('src/core/infer.ts', { exports: ['inferStack', 'inferArchitecture'], imports: ['src/utils/fs.ts'], importedBy: 1, rank: 0.5 }),
+        ],
+        dependsOn: ['src/utils'],
+      },
+      {
+        path: 'src/mcp',
+        purpose: 'MCP server',
+        fileCount: 1,
+        files: [f('src/mcp/server.ts', { exports: ['createPreludeServer'], imports: ['src/core/merger.ts', 'src/core/infer.ts'] })],
+        dependsOn: ['src/core'],
+      },
+      {
+        path: 'src/utils',
+        purpose: 'Utility functions',
+        fileCount: 1,
+        files: [f('src/utils/fs.ts', { exports: ['readJSON', 'writeJSON'], importedBy: 2, rank: 1 })],
+        dependedOnBy: ['src/core'],
+      },
+    ],
+    hubs: [{ file: 'src/utils/fs.ts', importedBy: 2, rank: 1, exports: ['readJSON', 'writeJSON'] }],
+  };
+
+  const text = (result: Awaited<ReturnType<Client['callTool']>>) =>
+    (result.content as Array<{ type: string; text: string }>)[0].text;
+
+  beforeAll(async () => {
+    delete process.env.PRELUDE_ROOT;
+    tmpDir = await mkdtemp(join(tmpdir(), 'prelude-mcp-map-test-'));
+    contextDir = join(tmpDir, '.context');
+    await mkdir(contextDir, { recursive: true });
+    await writeFile(join(contextDir, 'project.json'), JSON.stringify({ name: 'map-project', description: 'x' }));
+    await writeFile(join(contextDir, 'architecture.json'), JSON.stringify({ type: 'cli', directories: [] }));
+    await writeFile(join(contextDir, 'map.json'), JSON.stringify(mapFixture));
+
+    const server = createPreludeServer(tmpDir);
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    client = new Client({ name: 'test-client', version: '1.0.0' });
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+  });
+
+  afterAll(async () => {
+    await client.close();
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it('lists exactly the seven tools', async () => {
+    const { tools } = await client.listTools();
+    expect(tools.map(t => t.name).sort()).toEqual([
+      'prelude_annotate_module',
+      'prelude_compact',
+      'prelude_locate',
+      'prelude_map',
+      'prelude_query',
+      'prelude_record_decision',
+      'prelude_status',
+    ]);
+  });
+
+  it('sends server instructions', () => {
+    expect(client.getInstructions()).toContain('prelude_locate');
+  });
+
+  it('prelude_locate returns ranked files with hits in _meta', async () => {
+    const result = await client.callTool({ name: 'prelude_locate', arguments: { query: 'mcp server' } });
+    expect(text(result).split('\n')[0]).toMatch(/^1\. src\/mcp\/server\.ts/);
+    const hits = (result._meta as { hits: Array<{ file: string }> }).hits;
+    expect(hits[0].file).toBe('src/mcp/server.ts');
+  });
+
+  it('prelude_locate rejects an empty query', async () => {
+    const result = await client.callTool({ name: 'prelude_locate', arguments: { query: '  ' } });
+    expect(result.isError).toBe(true);
+  });
+
+  it('prelude_map overview lists hubs and every module', async () => {
+    const out = text(await client.callTool({ name: 'prelude_map', arguments: {} }));
+    expect(out).toContain('Read first');
+    for (const m of mapFixture.modules) expect(out).toContain(m.path);
+  });
+
+  it('prelude_map module view shows exports; bogus module lists valid paths', async () => {
+    const out = text(await client.callTool({ name: 'prelude_map', arguments: { module: 'src/core' } }));
+    expect(out).toContain('ContextMerger');
+    expect(out).toContain('inferArchitecture');
+
+    const bad = await client.callTool({ name: 'prelude_map', arguments: { module: 'src/nope' } });
+    expect(bad.isError).toBe(true);
+    expect(text(bad)).toContain('src/core, src/mcp, src/utils');
+  });
+
+  it('prelude_map file view shows imports and importers', async () => {
+    const out = text(await client.callTool({ name: 'prelude_map', arguments: { file: 'src/utils/fs.ts' } }));
+    expect(out).toContain('Exports: readJSON, writeJSON');
+    expect(out).toContain('Imported by 2');
+  });
+
+  it('prelude_record_decision writes decisions.json with author agent', async () => {
+    const result = await client.callTool({
+      name: 'prelude_record_decision',
+      arguments: { title: 'Use regex, not AST', rationale: 'No heavy dependencies', tags: ['scanner'] },
+    });
+    expect(result.isError).toBeFalsy();
+    const saved = JSON.parse(await readFile(join(contextDir, 'decisions.json'), 'utf-8'));
+    expect(saved.$schema).toContain('https://adjective.us/prelude/schemas/v1');
+    expect(saved.decisions).toHaveLength(1);
+    expect(saved.decisions[0]).toMatchObject({ title: 'Use regex, not AST', author: 'agent', status: 'accepted' });
+  });
+
+  it('prelude_annotate_module sets a manual purpose that survives mergeMap', async () => {
+    const result = await client.callTool({
+      name: 'prelude_annotate_module',
+      arguments: { path: 'src/core/', purpose: 'Inference engine', notes: 'Regex heuristics only' },
+    });
+    expect(text(result)).toContain('src/core — Inference engine');
+
+    const state = new StateManager(contextDir);
+    expect(state.isManuallyEdited('map.json', 'modules.src/core.purpose')).toBe(true);
+
+    const existing = JSON.parse(await readFile(join(contextDir, 'map.json'), 'utf-8'));
+    const { merged } = new ContextMerger(state).mergeMap(existing, mapFixture as never);
+    const core = merged.modules.find(m => m.path === 'src/core');
+    expect(core?.purpose).toBe('Inference engine');
+    expect(core?.notes).toBe('Regex heuristics only');
   });
 });

@@ -1,15 +1,9 @@
 import type { CAC } from 'cac';
-import { join } from 'path';
-import { readJSON, writeJSON, fileExists } from '../utils/fs.js';
+import { fileExists } from '../utils/fs.js';
 import { logger } from '../utils/log.js';
-import { getCurrentTimestamp, generateId } from '../utils/time.js';
-import { CONTEXT_FILES } from '../constants.js';
-import type { Decision, Decisions } from '../schema/index.js';
 import { resolveContextDir } from '../runtime/context.js';
-
-// Add these constants
-const PRELUDE_VERSION = "1.0.0";
-const SCHEMA_URL = "https://prelude.dev/schemas/v1";
+import { addDecision } from '../core/decisions.js';
+import type { Decision } from '../schema/index.js';
 
 export function registerDecisionCommand(cli: CAC) {
   cli
@@ -21,80 +15,46 @@ export function registerDecisionCommand(cli: CAC) {
     .option('--author <name>', 'Decision author')
     .option('--tags <items>', 'Comma-separated tags')
     .action(async (
-      title: string, 
-      options: { 
+      title: string,
+      options: {
         rationale?: string;
         alternatives?: string;
         impact?: string;
-        status?: 'proposed' | 'accepted' | 'rejected' | 'deprecated' | 'superseded';
+        status?: Decision['status'];
         author?: string;
         tags?: string;
-      },
-      dir: string = process.cwd()
+      }
     ) => {
-        const rootDir = dir;
+      const contextDir = resolveContextDir(process.cwd());
 
-        const contextDir = resolveContextDir(rootDir);
-
-        const decisionsPath = join(contextDir, CONTEXT_FILES.DECISIONS);
-      
-      // Check if .context exists
       if (!(await fileExists(contextDir))) {
         logger.error('.context/ directory not found. Run `prelude init` first.');
         process.exit(1);
       }
-      
-      logger.decision(`Recording decision: ${title}`);
-      
-      // Read existing decisions
-      // MODIFIED LINE: Add default $schema and version to the initial object
-      let decisions: Decisions = { 
-        $schema: `${SCHEMA_URL}/decisions.json`,
-        version: PRELUDE_VERSION,
-        decisions: [] 
-      };
-      if (await fileExists(decisionsPath)) {
-        decisions = await readJSON<Decisions>(decisionsPath);
-      }
-      
-      // Prompt for rationale if not provided
-      const rationale = options.rationale;
-      if (!rationale) {
-        logger.warn('No rationale provided. Please provide a brief explanation:');
-        // In a real implementation, you'd use a prompt library like enquirer
-        // For now, we'll require it via the flag
+
+      if (!options.rationale) {
         logger.error('Please provide --rationale flag');
         process.exit(1);
       }
-      
-      // Parse alternatives and tags
-      const alternatives = options.alternatives ? options.alternatives.split(',').map(s => s.trim()) : undefined;
-      const tags = options.tags ? options.tags.split(',').map(s => s.trim()) : undefined;
-      
-      // Create new decision
-      const decision: Decision = {
-        id: generateId(),
-        timestamp: getCurrentTimestamp(),
+
+      logger.decision(`Recording decision: ${title}`);
+
+      const split = (value?: string) => value ? value.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+      const decision = await addDecision(contextDir, {
         title,
-        status: options.status || 'accepted',
-        rationale,
-        alternatives,
+        rationale: options.rationale,
+        alternatives: split(options.alternatives),
         impact: options.impact,
+        status: options.status,
         author: options.author,
-        tags
-      };
-      
-      // Add to decisions
-      decisions.decisions.push(decision);
-      
-      // Write back
-      await writeJSON(decisionsPath, decisions);
-      
+        tags: split(options.tags),
+      });
+
       logger.success('✓ Decision recorded successfully!');
       logger.info(`\nDecision ID: ${decision.id}`);
       logger.info(`Status: ${decision.status}`);
-      if (alternatives) {
-        logger.info(`Alternatives considered: ${alternatives.length}`);
+      if (decision.alternatives) {
+        logger.info(`Alternatives considered: ${decision.alternatives.length}`);
       }
     });
 }

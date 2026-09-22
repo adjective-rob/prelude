@@ -1,26 +1,12 @@
 #!/usr/bin/env node
 
 import { cac } from 'cac';
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-// Get package.json - works in both dev and built versions
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Try built location first (dist/bin), then dev location (bin)
-let packageJson: any;
-try {
-  packageJson = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf-8'));
-} catch {
-  packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
-}
+import { getPackageVersion } from '../src/utils/version.js';
 
 const cli = cac('prelude');
 
 cli
-  .version(packageJson.version)
+  .version(getPackageVersion())
   .help();
 
 // Import commands
@@ -35,6 +21,7 @@ import { registerServeCommand } from '../src/commands/serve.js';
 import { registerMcpConfigCommand } from '../src/commands/mcp-config.js';
 import { registerValidateCommand } from '../src/commands/validate.js';
 import { registerLocateCommand } from '../src/commands/locate.js';
+import { registerAnnotateCommand } from '../src/commands/annotate.js';
 import { update } from '../src/commands/update.js';
 
 // Register all commands
@@ -49,6 +36,7 @@ registerServeCommand(cli);
 registerMcpConfigCommand(cli);
 registerValidateCommand(cli);
 registerLocateCommand(cli);
+registerAnnotateCommand(cli);
 
 // Register update command
 cli

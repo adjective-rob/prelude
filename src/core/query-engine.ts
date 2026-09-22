@@ -6,11 +6,11 @@ import { filterMapByTopic, filterMapByScope, formatMapSection, formatCompactMap 
 import { resolveContextDir } from '../runtime/context.js';
 
 // Roughly estimate tokens (1 token ≈ 4 characters for English text)
-function estimateTokens(text: string): number {
+export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-function truncateToTokenBudget(text: string, maxTokens: number): string {
+export function truncateToTokenBudget(text: string, maxTokens: number): string {
   const maxChars = maxTokens * 4;
   if (text.length <= maxChars) return text;
   return text.slice(0, maxChars) + '\n\n[... truncated to fit token budget]';
