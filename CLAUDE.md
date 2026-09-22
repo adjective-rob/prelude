@@ -19,19 +19,35 @@ tsx bin/prelude.ts   # Run CLI in dev mode without building
 
 ```
 bin/prelude.ts              CLI entry point (cac framework)
-src/commands/               Command handlers (init, export, update, query, compact, decision, watch, share)
+src/commands/               Command handlers (init, export, update, query, compact, decision, watch, share,
+                            locate, annotate, diff, workspace, serve, mcp-config, validate)
 src/core/                   Business logic
   infer.ts                  Static analysis — reads package.json, config files, directory structure
-  source-scanner.ts         Source-level heuristics — reads actual code (regex, not AST)
+  source-scanner.ts         Source-level heuristics — reads actual code (regex, not AST); isTestFile()
+  map-scanner.ts            buildMap(): exports, resolved imports (TS/JS, Python, Go, Rust), in-degree rank, modules, hubs
+  vocab.ts                  Shared directory-name → purpose vocabulary (architecture.json and map.json)
+  map-format.ts             Map filters and formatters shared by query, compact, export, CLAUDE.md/AGENTS.md
+  map-annotate.ts           annotateModule(): manual module purpose/notes in map.json
+  locate.ts                 Keyword scoring over map.json + decisions → the files to read for a task
+  diff.ts                   computeDiff(): what prelude update would change; shared by update and diff
+  decisions.ts              addDecision()/listDecisions() for decisions.json
+  workspace.ts              User-level workspace registry and index (~/.prelude)
   query-engine.ts           Query/filter/format engine for prelude query and prelude compact
-  exporter.ts               Markdown and JSON export generation for prelude export
-  merger.ts                 Smart merge — preserves manual edits during prelude update
+  exporter.ts               Markdown, JSON, CLAUDE.md, AGENTS.md export generation for prelude export
+  merger.ts                 Smart merge — preserves manual edits during prelude update (incl. mergeMap)
   state-manager.ts          Tracks which fields are inferred vs manually edited
   compact.ts                Thin wrapper around query-engine's exportCompact
-  watcher.ts                File change monitoring for prelude watch
-src/schema/                 Zod schemas defining the .context/ file types
+  updater.ts, watcher.ts    File change monitoring and incremental refresh for prelude watch
+src/mcp/                    MCP server
+  server.ts                 createPreludeServer(): tools and resources, single-project or workspace mode
+  resolver.ts               Project resolution for tools (single root or workspace lookup)
+  format-projects.ts        prelude_projects output
+src/runtime/
+  context.ts                resolveContextDir() — the only place that reads PRELUDE_ROOT
+  home.ts                   resolvePreludeHome() — $PRELUDE_HOME or ~/.prelude
+src/schema/                 Zod schemas defining the .context/ file types (incl. map.ts, workspace.ts)
 schemas/                    JSON Schema files (published to adjective.us, used for validation)
-src/utils/                  fs helpers, logging, timestamps
+src/utils/                  fs helpers, logging, timestamps, package version
 src/constants.ts            File names, watch patterns, ignore patterns
 ```
 
@@ -42,6 +58,10 @@ src/constants.ts            File names, watch patterns, ignore patterns
 `prelude export` → `exporter.ts` reads `.context/*.json` → produces markdown/JSON → clipboard
 `prelude query` → `query-engine.ts` reads `.context/*.json` → filters by topic/scope/type → stdout
 `prelude compact` → `query-engine.ts` `exportCompact()` → token-budgeted one-liner-per-section → stdout
+`prelude init` / `update` also → `map-scanner.ts` `buildMap()` → `merger.ts` `mergeMap()` → `.context/map.json`
+`prelude locate` → `locate.ts` reads `map.json` + `decisions.json` + `architecture.json` → ranked files with reasons → stdout
+`prelude diff` → `diff.ts` `computeDiff()` (same read/infer/merge as update, no writes) → drift → stdout / exit code
+`prelude workspace` → `workspace.ts` → `~/.prelude/workspace.json` (registry) + `index.json` (generated) → `prelude serve --workspace`
 
 ## Conventions
 
@@ -61,6 +81,10 @@ When adding new fields to the context format:
 3. Add detection logic in `src/core/infer.ts` or `src/core/source-scanner.ts`
 4. Add formatting in all three output paths: `exporter.ts` (markdown export), `query-engine.ts` `formatArchitectureSection` (query markdown), `query-engine.ts` `formatCompactArchitecture` (compact)
 5. Add tests
+
+For `map.json`, the Zod schema is `src/schema/map.ts` and the JSON Schema is `schemas/map.schema.json`; formatting lives in `src/core/map-format.ts` (not the architecture formatters). Anything a human can set (`purpose`, `notes`) must be preserved by `mergeMap`. Keep output deterministic: sorted arrays, no timestamps.
+
+For the workspace, the Zod schema is `src/schema/workspace.ts` and the JSON Schema is `schemas/workspace.schema.json`. `index.json` is a machine-local cache. New index fields go in `IndexedProjectSchema` and `buildWorkspaceIndex()`, and show up in `src/mcp/format-projects.ts`.
 
 ## Testing
 

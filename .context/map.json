@@ -176,7 +176,7 @@
         {
           "file": "src/commands/init.ts",
           "lang": "ts",
-          "lines": 288,
+          "lines": 295,
           "exports": [
             "registerInitCommand",
             "InitOptions",
@@ -700,7 +700,7 @@
         {
           "file": "src/core/workspace.ts",
           "lang": "ts",
-          "lines": 303,
+          "lines": 322,
           "exports": [
             "loadWorkspace",
             "saveWorkspace",
@@ -708,6 +708,7 @@
             "addProject",
             "removeProject",
             "readManifest",
+            "dominantPrefix",
             "buildWorkspaceIndex",
             "saveWorkspaceIndex",
             "loadWorkspaceIndex",
@@ -761,7 +762,7 @@
         {
           "file": "src/mcp/format-projects.ts",
           "lang": "ts",
-          "lines": 86,
+          "lines": 96,
           "exports": [
             "formatProjectBlock",
             "formatProjects"
@@ -1020,7 +1021,7 @@
         {
           "file": "src/schema/workspace.ts",
           "lang": "ts",
-          "lines": 58,
+          "lines": 59,
           "exports": [
             "WorkspaceProjectSchema",
             "WorkspaceSchema",

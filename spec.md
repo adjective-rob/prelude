@@ -1,7 +1,7 @@
 # The Prelude Specification v1.0
 
 **Status:** Draft  
-**Last Updated:** November 2025  
+**Last Updated:** September 2026  
 **Authors:** Rob Hocking (Adjective)
 
 ---
@@ -18,12 +18,13 @@ Prelude is an open standard for expressing and maintaining machine-readable cont
 2. [Design Principles](#design-principles)
 3. [Directory Structure](#directory-structure)
 4. [File Specifications](#file-specifications)
-5. [Schema Definitions](#schema-definitions)
-6. [Versioning](#versioning)
-7. [Validation](#validation)
-8. [Extension Points](#extension-points)
-9. [Security Considerations](#security-considerations)
-10. [Implementations](#implementations)
+5. [Workspace](#workspace)
+6. [Schema Definitions](#schema-definitions)
+7. [Versioning](#versioning)
+8. [Validation](#validation)
+9. [Extension Points](#extension-points)
+10. [Security Considerations](#security-considerations)
+11. [Implementations](#implementations)
 
 ---
 
@@ -580,9 +581,74 @@ changed one produces a small, reviewable diff.
 
 ---
 
-## 5. Schema Definitions
+## 5. Workspace
 
-### 5.1 JSON Schema
+The workspace is an optional, **machine-local** layer on top of per-project
+context. It is never committed to any repository. It lets one tool (for
+example one MCP server) serve context for every codebase a developer works
+on, and records how those codebases relate.
+
+### 5.1 Location
+
+Implementations SHOULD store workspace files in `$PRELUDE_HOME` when set,
+otherwise `~/.prelude/`. The directory is created on first write, never on
+read.
+
+```
+~/.prelude/
+├── workspace.json   # Registry of projects (user-maintained via tooling)
+└── index.json       # Generated cache over each project's .context/
+```
+
+### 5.2 workspace.json
+
+**Purpose:** The list of registered projects.
+
+```json
+{
+  "$schema": "https://adjective.us/prelude/schemas/v1/workspace.schema.json",
+  "version": "1.0.0",
+  "projects": [
+    { "name": "backend", "path": "/home/me/code/backend", "addedAt": "2026-09-22T00:00:00Z" },
+    { "name": "web-frontend", "alias": "frontend", "path": "/home/me/code/web", "addedAt": "2026-09-22T00:00:00Z" }
+  ]
+}
+```
+
+- `name` (REQUIRED): from the project's `project.json` `name`, else the
+  directory name.
+- `path` (REQUIRED): absolute path to the project root. Its context lives
+  wherever the implementation resolves it (`<path>/.context` or an
+  external brain directory).
+- `alias` (OPTIONAL): short name used to address the project. Names and
+  aliases MUST be unique, case-insensitively.
+- `addedAt` (REQUIRED): ISO 8601 datetime.
+
+### 5.3 index.json
+
+**Purpose:** A derived summary of every registered project, so a tool can
+describe all of them without reading every context file. It is a cache:
+implementations MAY rebuild it at any time and SHOULD rebuild it when it is
+older than `workspace.json` or any project's context files. It carries a
+`generatedAt` timestamp.
+
+Each entry summarises one project: name, alias, path, context directory,
+description, architecture type, language, frameworks, package name, entry
+points, API endpoints (capped) with the total count and dominant prefix,
+hub files, module paths with purposes, related projects, decision count,
+last context update, whether a map exists, and `missing: true` when the path
+or context directory no longer exists.
+
+`relatedProjects` in the index combines the project's own
+`project.json` `relatedProjects` (listed first) with inferred
+`shares-package` relations: project A depends, in its manifest, on project
+B's package name.
+
+---
+
+## 6. Schema Definitions
+
+### 6.1 JSON Schema
 
 All JSON files MUST validate against their respective JSON Schema definitions.
 
@@ -597,7 +663,7 @@ https://adjective.us/prelude/schemas/v1/session.schema.json
 https://adjective.us/prelude/schemas/v1/export.schema.json
 ```
 
-### 5.2 Validation
+### 6.2 Validation
 
 Implementations SHOULD validate files against schemas before reading/writing.
 
@@ -609,9 +675,9 @@ Validation MAY be performed:
 
 ---
 
-## 6. Versioning
+## 7. Versioning
 
-### 6.1 Semantic Versioning
+### 7.1 Semantic Versioning
 
 Prelude follows Semantic Versioning 2.0.0:
 
@@ -619,7 +685,7 @@ Prelude follows Semantic Versioning 2.0.0:
 - **MINOR:** New optional fields or files
 - **PATCH:** Bug fixes, clarifications, non-breaking updates
 
-### 6.2 Version Field
+### 7.2 Version Field
 
 All JSON files MUST include a `version` field:
 
@@ -629,39 +695,39 @@ All JSON files MUST include a `version` field:
 }
 ```
 
-### 6.3 Compatibility
+### 7.3 Compatibility
 
 Implementations MUST support files with the same MAJOR version.
 
 Implementations SHOULD gracefully handle unknown fields (forward compatibility).
 
-### 6.4 Migration
+### 7.4 Migration
 
 When MAJOR version changes occur, tools SHOULD provide migration utilities.
 
 ---
 
-## 7. Validation
+## 8. Validation
 
-### 7.1 File Presence
+### 8.1 File Presence
 
 A valid Prelude implementation MUST include:
 - `.context/project.json`
 - `.context/stack.json`
 
-### 7.2 Schema Compliance
+### 8.2 Schema Compliance
 
 All JSON files MUST validate against their schemas.
 
-### 7.3 Required Fields
+### 8.3 Required Fields
 
 Files MUST include all required fields as defined in Section 4.
 
-### 7.4 Data Types
+### 8.4 Data Types
 
 All fields MUST conform to their specified data types.
 
-### 7.5 ISO 8601 Datetimes
+### 8.5 ISO 8601 Datetimes
 
 All datetime fields MUST use ISO 8601 format with UTC timezone:
 ```
@@ -670,9 +736,9 @@ All datetime fields MUST use ISO 8601 format with UTC timezone:
 
 ---
 
-## 8. Extension Points
+## 9. Extension Points
 
-### 8.1 Custom Fields
+### 9.1 Custom Fields
 
 Implementations MAY add custom fields to any JSON file.
 
@@ -688,7 +754,7 @@ Custom fields SHOULD be namespaced:
 }
 ```
 
-### 8.2 Custom Files
+### 9.2 Custom Files
 
 Implementations MAY add custom files to `.context/` directory.
 
@@ -700,15 +766,15 @@ Custom files SHOULD use prefixes to avoid conflicts:
 └── org-metrics.json
 ```
 
-### 8.3 Plugins
+### 9.3 Plugins
 
 Implementations MAY support plugin systems for extending inference or validation.
 
 ---
 
-## 9. Security Considerations
+## 10. Security Considerations
 
-### 9.1 Sensitive Data
+### 10.1 Sensitive Data
 
 `.context/` files SHOULD NOT contain:
 - API keys or secrets
@@ -716,7 +782,7 @@ Implementations MAY support plugin systems for extending inference or validation
 - Personal identifiable information (PII)
 - Internal network topology
 
-### 9.2 .gitignore
+### 10.2 .gitignore
 
 If `.context/` contains generated or sensitive data, relevant files MAY be added to `.gitignore`:
 
@@ -725,15 +791,15 @@ If `.context/` contains generated or sensitive data, relevant files MAY be added
 .context/session.json
 ```
 
-### 9.3 Validation
+### 10.3 Validation
 
 Implementations SHOULD validate input to prevent injection attacks.
 
 ---
 
-## 10. Implementations
+## 11. Implementations
 
-### 10.1 Reference Implementation
+### 11.1 Reference Implementation
 
 The reference implementation is:
 - **Name:** prelude-cli
@@ -741,7 +807,7 @@ The reference implementation is:
 - **Repository:** https://github.com/adjective/prelude
 - **License:** MIT
 
-### 10.2 Alternative Implementations
+### 11.2 Alternative Implementations
 
 Alternative implementations are encouraged and MAY use any language or platform.
 
@@ -750,7 +816,7 @@ All implementations SHOULD:
 - Support version field
 - Follow this specification
 
-### 10.3 Certification
+### 11.3 Certification
 
 Future versions of this spec MAY include a certification process for implementations.
 
@@ -782,6 +848,11 @@ See reference implementation for complete examples.
 ---
 
 ## Appendix C: Changelog
+
+### v1.1.0 (2026-09-22)
+- Added `map.json` (§4.8): code routing map with modules, exports, imports, and hubs
+- Added `relatedProjects` to `project.json` (§4.2)
+- Added the machine-local Workspace layer (§5)
 
 ### v1.0.0 (2025-01-15)
 - Initial specification release

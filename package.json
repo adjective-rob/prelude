@@ -1,6 +1,6 @@
 {
   "name": "prelude-context",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "description": "The open standard for expressing and maintaining machine-readable context about a codebase",
   "type": "module",
   "bin": {
@@ -10,8 +10,9 @@
     "dist/**/*",
     "schemas/**/*",
     "README.md",
-    "SPEC.md",
-    "LICENSE"
+    "spec.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "dev": "tsx watch bin/prelude.ts",

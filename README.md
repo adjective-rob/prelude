@@ -164,11 +164,12 @@ Generates a markdown document optimized for LLMs:
 ```bash
 prelude export                      # Default markdown export
 prelude export --format claude-md   # Generate a CLAUDE.md file
+prelude export --format agents-md   # Generate an AGENTS.md file
 prelude export --format cursorrules # Generate a .cursorrules file
 prelude export --format json        # Structured JSON export
 ```
 
-The `claude-md` format generates a clean CLAUDE.md from your `.context/` data — Prelude becomes the source of truth that outputs to whatever format your AI tool expects.
+The `claude-md` and `agents-md` formats generate a clean CLAUDE.md / AGENTS.md from your `.context/` data, including a **Read first** list of hub files and a one-line-per-module map. Prelude becomes the source of truth that outputs to whatever format your AI tool expects.
 
 ### `prelude validate`
 Validates all `.context/` files against their JSON schemas:
@@ -261,6 +262,25 @@ prelude annotate src/core --notes "Regex heuristics only, no AST"
 prelude annotate src/core --clear-notes
 ```
 
+### `prelude diff [--check]`
+Shows what `prelude update` would change, without writing anything:
+```bash
+prelude diff                  # drift, grouped by file
+prelude diff --all            # also show preserved manual edits
+prelude diff --format json    # { changed, count, changes }
+prelude diff --check          # exit 1 on drift (CI guard)
+```
+
+### `prelude workspace <action>`
+Manages the user-level registry of projects served by `prelude serve --workspace`:
+```bash
+prelude workspace add . --alias backend   # register (requires .context/)
+prelude workspace list                    # one line per project
+prelude workspace index                   # rebuild ~/.prelude/index.json
+prelude workspace status                  # paths, count, index age
+prelude workspace remove backend
+```
+
 ### `prelude watch`
 Tracks development sessions:
 ```bash
@@ -274,6 +294,7 @@ Starts Prelude as an MCP server over stdio transport:
 ```bash
 prelude serve                    # Serve context for current directory
 prelude serve --root ~/my-project  # Serve context for a specific project
+prelude serve --workspace        # Serve every registered project
 ```
 
 AI tools connect to this server to query your project context programmatically — no clipboard needed.
@@ -284,6 +305,8 @@ Prints the configuration snippet to connect Prelude to your AI tool:
 prelude mcp-config --client claude-code      # Default
 prelude mcp-config --client claude-desktop
 prelude mcp-config --client cursor
+prelude mcp-config --client codex
+prelude mcp-config --workspace               # one user-scope server for every project
 ```
 
 ---
@@ -563,6 +586,7 @@ your-project/
 │   ├── architecture.json # Architecture patterns
 │   ├── constraints.json  # Development rules
 │   ├── decisions.json    # Architecture decisions
+│   ├── map.json          # Code map: modules, exports, imports, hubs
 │   ├── changelog.md      # Project timeline
 │   └── .prelude/         # State tracking (gitignore *.session.json)
 │       ├── state.json    # Tracks inferred vs manual fields
@@ -608,9 +632,15 @@ Yes! Prelude has full inference support for **JavaScript/TypeScript**, **Python*
 - [x] Bootstrap from CLAUDE.md (`prelude init --from-claude-md`)
 - [x] Schema validation command (`prelude validate`)
 - [x] GitHub Action for automated updates
-- [ ] VS Code extension for inline context
-- [ ] Plugin system for custom inference
-- [ ] Context diff tool
+- [x] Code map: modules, exports, import graph, hubs (`map.json`)
+- [x] Task-to-file routing (`prelude locate`, `prelude_locate`)
+- [x] Context diff and CI drift guard (`prelude diff --check`)
+- [x] AGENTS.md export
+- [x] Agent write path: decisions, module annotations, project links
+- [x] Multi-project workspace served by one MCP server (`prelude serve --workspace`)
+- [ ] PageRank-weighted ranking
+- [ ] gitignore-aware walking
+- [ ] tree-sitter-backed exports for more languages
 - [ ] Temporal brain layer (learned heuristics from AI tool usage)
 
 ---
