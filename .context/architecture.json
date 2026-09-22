@@ -4,17 +4,15 @@
   "directories": [
     {
       "path": "CLAUDE_TASKS",
-      "fileCount": 3,
-      "purpose": "Background jobs"
+      "fileCount": 2
     },
     {
       "path": "CLAUDE_TASKS/done",
-      "fileCount": 14
+      "fileCount": 15
     },
     {
       "path": "bin",
-      "fileCount": 1,
-      "purpose": "Executable entry points"
+      "fileCount": 1
     },
     {
       "path": "schemas",
@@ -27,23 +25,19 @@
     },
     {
       "path": "src/commands",
-      "fileCount": 15,
-      "purpose": "Command handlers"
+      "fileCount": 15
     },
     {
       "path": "src/core",
-      "fileCount": 18,
-      "purpose": "Core business logic"
+      "fileCount": 18
     },
     {
       "path": "src/mcp",
-      "fileCount": 3,
-      "purpose": "MCP server"
+      "fileCount": 3
     },
     {
       "path": "src/runtime",
-      "fileCount": 2,
-      "purpose": "Runtime environment helpers"
+      "fileCount": 2
     },
     {
       "path": "src/schema",
@@ -61,12 +55,6 @@
       "purpose": "Tests"
     }
   ],
-  "entryPoints": [
-    {
-      "file": "bin/prelude.ts",
-      "purpose": "CLI entry point"
-    }
-  ],
   "type": "cli",
   "patterns": [
     "Utility modules"
@@ -75,7 +63,21 @@
     "ESLint code linting",
     "TypeScript strict mode"
   ],
+  "entryPoints": [],
+  "keyFiles": [
+    {
+      "file": "tests/context-dir.test.ts",
+      "role": "env config"
+    },
+    {
+      "file": "tests/workspace.test.ts",
+      "role": "env config"
+    }
+  ],
   "importPatterns": {
+    "internalAliases": [
+      "@/"
+    ],
     "heavyImporters": [
       "bin/prelude.ts",
       "src/commands/init.ts",
