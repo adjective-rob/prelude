@@ -70,6 +70,22 @@ export const DIRECTORY_PURPOSES: Record<string, string> = {
   agents: 'Agent implementations',
   pipelines: 'Pipeline stages',
   runtime: 'Runtime environment helpers',
+  ingest: 'Data ingestion',
+  ingesters: 'Data ingestion',
+  ingestion: 'Data ingestion',
+  integrations: 'Third-party integrations',
+  adapters: 'Adapters',
+  plugins: 'Plugins',
+  clients: 'API clients',
+  sdk: 'SDK',
+  tools: 'Tools',
+  server: 'Server',
+  cmd: 'Command entry points',
+  internal: 'Internal packages',
+  pkg: 'Library packages',
+  prompts: 'LLM prompts',
+  emails: 'Email templates',
+  webhooks: 'Webhook handlers',
 };
 
 // Longest key first so `routers` beats `router` beats `api` in the fallback.

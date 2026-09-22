@@ -7,6 +7,9 @@
   ],
   "mustNotUse": [],
   "preferences": [],
+  "codeStyle": {
+    "linter": "ESLint"
+  },
   "testing": {
     "required": true,
     "strategy": "Unit and integration tests"
@@ -17,8 +20,5 @@
   "documentation": {
     "required": true,
     "style": "Markdown"
-  },
-  "codeStyle": {
-    "linter": "ESLint"
   }
 }

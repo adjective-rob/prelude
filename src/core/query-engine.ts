@@ -483,6 +483,13 @@ function formatCompactStack(data: Record<string, unknown>): string {
   return parts.length > 0 ? '[stack] ' + parts.join(' | ') : '';
 }
 
+// Compact lines are one line per section; long lists would starve later sections
+const COMPACT_LIST_CAP = 12;
+
+function capList(shown: string[], total: number): string {
+  return shown.join(', ') + (total > shown.length ? `, +${total - shown.length}` : '');
+}
+
 function formatCompactArchitecture(data: Record<string, unknown>): string {
   const parts: string[] = [];
   if (data.type) parts.push('type=' + String(data.type));
@@ -496,10 +503,12 @@ function formatCompactArchitecture(data: Record<string, unknown>): string {
     if (entries.length > 0) parts.push('entry: ' + entries.join(', '));
   }
   if (Array.isArray(data.directories) && data.directories.length > 0) {
-    const dirs = (data.directories as Array<{ path?: string; purpose?: string }>)
-      .map(d => d.purpose ? `${d.path} (${d.purpose})` : d.path || '')
-      .filter(Boolean);
-    if (dirs.length > 0) parts.push('dirs: ' + dirs.join(', '));
+    const all = data.directories as Array<{ path?: string; purpose?: string }>;
+    // Directories with a known purpose carry the signal; cap the rest
+    const withPurpose = all.filter(d => d.purpose);
+    const shown = (withPurpose.length > 0 ? withPurpose : all).slice(0, COMPACT_LIST_CAP);
+    const dirs = shown.map(d => d.purpose ? `${d.path} (${d.purpose})` : d.path || '').filter(Boolean);
+    if (dirs.length > 0) parts.push('dirs: ' + capList(dirs, all.length));
   }
   // Source-level compact summaries
   const archAny = data as any;
@@ -508,15 +517,15 @@ function formatCompactArchitecture(data: Record<string, unknown>): string {
       const methods = r.methods ? `[${r.methods.join(',')}]` : '';
       return `${r.path}${methods}`;
     });
-    parts.push('routes: ' + routePaths.join(', '));
+    parts.push('routes: ' + capList(routePaths.slice(0, COMPACT_LIST_CAP), routePaths.length));
   }
   if (archAny.apiEndpoints?.length) {
     const eps = archAny.apiEndpoints.map((ep: any) => `${ep.methods.join(',')} ${ep.path}`);
-    parts.push('api: ' + eps.join(', '));
+    parts.push('api: ' + capList(eps.slice(0, COMPACT_LIST_CAP), eps.length));
   }
   if (archAny.middleware?.length) {
     const mw = archAny.middleware.map((m: any) => m.file);
-    parts.push('middleware: ' + mw.join(', '));
+    parts.push('middleware: ' + capList(mw.slice(0, COMPACT_LIST_CAP), mw.length));
   }
   if (archAny.reactPatterns) {
     const rp = archAny.reactPatterns;
@@ -529,7 +538,7 @@ function formatCompactArchitecture(data: Record<string, unknown>): string {
   }
   if (archAny.keyFiles?.length) {
     const kf = archAny.keyFiles.map((k: any) => `${k.file}(${k.role})`);
-    parts.push('key-files: ' + kf.join(', '));
+    parts.push('key-files: ' + capList(kf.slice(0, COMPACT_LIST_CAP), kf.length));
   }
   return parts.length > 0 ? '[arch] ' + parts.join(' | ') : '';
 }

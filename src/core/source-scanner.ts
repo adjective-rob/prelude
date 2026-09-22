@@ -63,6 +63,8 @@ export interface KeyFileInfo {
 
 export const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.rs', '.go']);
 const MAX_READ_LINES = 100;
+const MAX_FULL_READ_BYTES = 512 * 1024;
+const FULL_READ_EXTENSIONS = new Set(['.py', '.go', '.rs']);
 const MAX_READ_BYTES = 4096;
 export const SKIP_DIRS = new Set([
   'node_modules', '.next', 'dist', 'build', '.git', '.context', 'coverage', '.turbo',
@@ -82,6 +84,23 @@ function matchesIgnorePattern(filePath: string): boolean {
     }
   }
   return false;
+}
+
+const TEST_DIR_MARKERS = ['/tests/', '/test/', '/__tests__/', '/spec/'];
+const TEST_BASENAME_PATTERNS = [
+  /\.(test|spec)\.[cm]?[jt]sx?$/,
+  /^test_.*\.py$/,
+  /_test\.py$/,
+  /^conftest\.py$/,
+  /_test\.go$/,
+];
+
+/** True for test files: under a tests directory, or named like a test. */
+export function isTestFile(file: string): boolean {
+  const normalized = '/' + file.replace(/\\/g, '/');
+  if (TEST_DIR_MARKERS.some(m => normalized.includes(m))) return true;
+  const base = basename(normalized);
+  return TEST_BASENAME_PATTERNS.some(re => re.test(base));
 }
 
 async function collectSourceFiles(rootDir: string): Promise<string[]> {
@@ -108,7 +127,8 @@ async function collectSourceFiles(rootDir: string): Promise<string[]> {
         const ext = extname(entry.name);
         if (SOURCE_EXTENSIONS.has(ext)) {
           const rel = relative(rootDir, fullPath);
-          if (!matchesIgnorePattern(rel)) {
+          // matchesIgnorePattern's glob stripping cannot express `*.test.*`
+          if (!matchesIgnorePattern(rel) && !isTestFile(rel)) {
             files.push(rel);
           }
         }
@@ -149,6 +169,19 @@ async function readFileHead(rootDir: string, file: string): Promise<string | nul
       });
       stream.on('error', () => resolve(null));
     });
+  } catch {
+    return null;
+  }
+}
+
+async function readFileFull(rootDir: string, file: string): Promise<string | null> {
+  try {
+    const fullPath = join(rootDir, file);
+    const info = await stat(fullPath);
+    if (info.size > MAX_FULL_READ_BYTES) return readFileHead(rootDir, file);
+    const content = await readFile(fullPath, 'utf-8');
+    if (content.slice(0, 512).includes('\0')) return null;
+    return content;
   } catch {
     return null;
   }
@@ -379,14 +412,26 @@ function scanImportPatterns(file: string, content: string, result: SourceScanRes
 // --- Python scanners ---
 
 function scanPythonRoutes(file: string, content: string, result: SourceScanResult): void {
+  // Router objects declared in this file, with their prefixes:
+  //   router = APIRouter(prefix="/api/v1", tags=[...])   app = FastAPI(...)
+  const prefixes = new Map<string, string>([['app', ''], ['router', '']]);
+  const declPattern = /^(\w+)\s*=\s*(?:fastapi\.)?(APIRouter|FastAPI)\s*\(([^)]*)\)/gm;
+  let decl;
+  while ((decl = declPattern.exec(content)) !== null) {
+    const prefix = decl[2] === 'APIRouter' ? decl[3].match(/prefix\s*=\s*["']([^"']*)["']/)?.[1] ?? '' : '';
+    prefixes.set(decl[1], prefix.replace(/\/+$/, ''));
+  }
+
   // FastAPI / Starlette decorator routes: @app.get("/path"), @router.post("/path")
-  const fastapiPattern = /(?:@(?:app|router)\.(get|post|put|patch|delete|head|options))\s*\(\s*["']([^"']+)["']/gi;
+  const fastapiPattern = /@(\w+)\.(get|post|put|patch|delete|head|options)\s*\(\s*["']([^"']*)["']/gi;
   const pathMap = new Map<string, string[]>();
   let match;
 
   while ((match = fastapiPattern.exec(content)) !== null) {
-    const method = match[1].toUpperCase();
-    const path = match[2];
+    const prefix = prefixes.get(match[1]);
+    if (prefix === undefined) continue;
+    const method = match[2].toUpperCase();
+    const path = (prefix + match[3]) || '/';
     if (!pathMap.has(path)) pathMap.set(path, []);
     const methods = pathMap.get(path)!;
     if (!methods.includes(method)) methods.push(method);
@@ -546,7 +591,9 @@ export async function scanSources(rootDir: string): Promise<SourceScanResult> {
   const files = await collectSourceFiles(rootDir);
 
   for (const file of files) {
-    const content = await readFileHead(rootDir, file);
+    // Route decorators can be anywhere in a Python/Go/Rust file; read it whole
+    const fullRead = FULL_READ_EXTENSIONS.has(extname(file));
+    const content = fullRead ? await readFileFull(rootDir, file) : await readFileHead(rootDir, file);
     if (content === null) continue;
 
     try {

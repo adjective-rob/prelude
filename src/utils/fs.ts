@@ -51,6 +51,11 @@ export async function listFiles(dir: string): Promise<string[]> {
   }
 }
 
+// Dependencies, virtualenvs, and build output are never part of the architecture
+const TREE_SKIP_DIRS = new Set([
+  'node_modules', '__pycache__', 'venv', 'target', 'vendor', 'dist', 'coverage',
+]);
+
 export async function getDirectoryTree(rootDir: string, maxDepth: number = 2, currentDepth: number = 0): Promise<string[]> {
   if (currentDepth >= maxDepth) return [];
   
@@ -58,10 +63,8 @@ export async function getDirectoryTree(rootDir: string, maxDepth: number = 2, cu
   const entries = await readdir(rootDir, { withFileTypes: true });
   
   for (const entry of entries) {
-    if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules' &&
-        entry.name !== '__pycache__' && !entry.name.endsWith('.egg-info') &&
-        entry.name !== 'venv' && entry.name !== '.venv' &&
-        entry.name !== 'target' && entry.name !== 'vendor') {
+    if (entry.isDirectory() && !entry.name.startsWith('.') && !TREE_SKIP_DIRS.has(entry.name) &&
+        !entry.name.endsWith('.egg-info')) {
       const fullPath = join(rootDir, entry.name);
       dirs.push(fullPath);
       

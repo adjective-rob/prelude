@@ -145,11 +145,14 @@ export function formatAgentGuideMap(map: CodeMap): string {
   if (hubs.length > 0) {
     md += `**Read first:** ${hubs.map(h => `\`${h.file}\``).join(', ')}\n\n`;
   }
+  const isConfig = (file: string) => /(^|\/)[^/]+\.config\.[cm]?[jt]s$/.test(file);
   const modules = map.modules.filter(m => !m.files.every(f => f.isTest) || m.purpose);
   if (modules.length > 0) {
     md += '**Modules:**\n';
     for (const mod of modules) {
-      const key = topFiles(mod, 3).map(f => {
+      const candidates = { ...mod, files: mod.files.filter(f => !isConfig(f.file)) };
+      if (candidates.files.length === 0 && !mod.purpose && !mod.notes) continue;
+      const key = topFiles(candidates, 3).map(f => {
         const name = relativeToModule(f.file, mod.path);
         const ex = (f.exports ?? []).slice(0, 2);
         return ex.length > 0 ? `${name} (${ex.join(', ')})` : name;

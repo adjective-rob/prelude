@@ -1,3 +1,53 @@
 {
-  "decisions": []
+  "decisions": [
+    {
+      "id": "1790113775524-gs04nts",
+      "timestamp": "2026-09-22T21:49:35.524Z",
+      "title": "Manual edits are sacred",
+      "status": "accepted",
+      "rationale": "prelude update must never overwrite hand-edited fields. src/core/state-manager.ts tracks which fields are inferred vs manually edited, and src/core/merger.ts preserves manual edits during update (module purposes and notes in map.json, project name/description/relatedProjects).",
+      "tags": [
+        "merge",
+        "state",
+        "update"
+      ]
+    },
+    {
+      "id": "1790113775667-lejdhv9",
+      "timestamp": "2026-09-22T21:49:35.667Z",
+      "title": "Regex heuristics, not AST parsers",
+      "status": "accepted",
+      "rationale": "Inference and scanning (src/core/infer.ts, src/core/source-scanner.ts, src/core/map-scanner.ts) use fs/promises, path, and regex only. No heavy runtime dependencies. A wrong pointer in the map costs one wasted read, so regex-grade accuracy is acceptable for routing.",
+      "alternatives": [
+        "tree-sitter",
+        "TypeScript compiler API"
+      ],
+      "tags": [
+        "scanner",
+        "dependencies"
+      ]
+    },
+    {
+      "id": "1790113775813-k8y377z",
+      "timestamp": "2026-09-22T21:49:35.813Z",
+      "title": "Schemas are the contract",
+      "status": "accepted",
+      "rationale": "Every .context/ file has a Zod schema in src/schema/ and a JSON Schema in schemas/, kept in sync. JSON Schemas set additionalProperties: true for forward compatibility; new fields are optional.",
+      "tags": [
+        "schema",
+        "validation"
+      ]
+    },
+    {
+      "id": "1790113775947-vybv0wd",
+      "timestamp": "2026-09-22T21:49:35.947Z",
+      "title": "One resolveContextDir for external brain mode",
+      "status": "accepted",
+      "rationale": "src/runtime/context.ts resolveContextDir() is the only place that reads PRELUDE_ROOT. Embedded mode uses <root>/.context; external brain mode uses <PRELUDE_ROOT>/<project basename>.",
+      "tags": [
+        "context",
+        "prelude_root"
+      ]
+    }
+  ]
 }

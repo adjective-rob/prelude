@@ -223,6 +223,23 @@ export class ContextMerger {
       });
     }
 
+    // Any other inferred field that changed (entry points, endpoints, routes,
+    // key files, type, ...) is drift. Directories are reported per path below.
+    for (const key of Object.keys({ ...existing, ...inferred }) as Array<keyof Architecture>) {
+      if (key === 'directories' || key === '$schema' || key === 'version') continue;
+      if (key === 'patterns' && manualFields.includes('patterns')) continue;
+      const oldValue = existing[key];
+      const newValue = inferred[key];
+      if (JSON.stringify(oldValue) === JSON.stringify(newValue)) continue;
+      changes.push({
+        field: key as string,
+        type: oldValue === undefined ? 'added' : newValue === undefined ? 'removed' : 'modified',
+        ...(oldValue !== undefined ? { oldValue } : {}),
+        ...(newValue !== undefined ? { newValue } : {}),
+        reason: 'Codebase changed',
+      });
+    }
+
     // Merge directories (new + preserved manual)
     if (existing.directories && inferred.directories) {
       const existingDirPaths = new Set(existing.directories.map(d => d.path));

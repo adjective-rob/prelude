@@ -4,15 +4,21 @@
   "directories": [
     {
       "path": "CLAUDE_TASKS",
-      "fileCount": 5
+      "fileCount": 3,
+      "purpose": "Background jobs"
+    },
+    {
+      "path": "CLAUDE_TASKS/done",
+      "fileCount": 14
     },
     {
       "path": "bin",
-      "fileCount": 1
+      "fileCount": 1,
+      "purpose": "Executable entry points"
     },
     {
       "path": "schemas",
-      "fileCount": 7,
+      "fileCount": 9,
       "purpose": "Data schemas"
     },
     {
@@ -21,34 +27,44 @@
     },
     {
       "path": "src/commands",
-      "fileCount": 11
+      "fileCount": 15,
+      "purpose": "Command handlers"
     },
     {
       "path": "src/core",
-      "fileCount": 10
+      "fileCount": 18,
+      "purpose": "Core business logic"
     },
     {
       "path": "src/mcp",
-      "fileCount": 1
+      "fileCount": 3,
+      "purpose": "MCP server"
     },
     {
       "path": "src/runtime",
-      "fileCount": 1
+      "fileCount": 2,
+      "purpose": "Runtime environment helpers"
     },
     {
       "path": "src/schema",
-      "fileCount": 8,
+      "fileCount": 10,
       "purpose": "Data schemas"
     },
     {
       "path": "src/utils",
-      "fileCount": 3,
+      "fileCount": 4,
       "purpose": "Utility functions"
     },
     {
       "path": "tests",
-      "fileCount": 7,
+      "fileCount": 16,
       "purpose": "Tests"
+    }
+  ],
+  "entryPoints": [
+    {
+      "file": "bin/prelude.ts",
+      "purpose": "CLI entry point"
     }
   ],
   "type": "cli",
@@ -59,10 +75,13 @@
     "ESLint code linting",
     "TypeScript strict mode"
   ],
-  "entryPoints": [],
   "importPatterns": {
     "heavyImporters": [
-      "bin/prelude.ts"
+      "bin/prelude.ts",
+      "src/commands/init.ts",
+      "src/commands/update.ts",
+      "src/core/updater.ts",
+      "src/mcp/server.ts"
     ]
   }
 }

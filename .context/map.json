@@ -1,0 +1,1451 @@
+{
+  "$schema": "https://adjective.us/prelude/schemas/v1/map.schema.json",
+  "version": "1.0.0",
+  "stats": {
+    "files": 71,
+    "modules": 10,
+    "edges": 214,
+    "unresolvedImports": 5
+  },
+  "modules": [
+    {
+      "path": ".",
+      "fileCount": 1,
+      "files": [
+        {
+          "file": "eslint.config.js",
+          "lang": "js",
+          "lines": 28
+        }
+      ]
+    },
+    {
+      "path": "bin",
+      "purpose": "Executable entry points",
+      "fileCount": 1,
+      "files": [
+        {
+          "file": "bin/prelude.ts",
+          "lang": "ts",
+          "lines": 55,
+          "imports": [
+            "src/commands/annotate.ts",
+            "src/commands/compact.ts",
+            "src/commands/decision.ts",
+            "src/commands/diff.ts",
+            "src/commands/export.ts",
+            "src/commands/init.ts",
+            "src/commands/locate.ts",
+            "src/commands/mcp-config.ts",
+            "src/commands/query.ts",
+            "src/commands/serve.ts",
+            "src/commands/share.ts",
+            "src/commands/update.ts",
+            "src/commands/validate.ts",
+            "src/commands/watch.ts",
+            "src/commands/workspace.ts",
+            "src/utils/version.ts"
+          ],
+          "rank": 0.5,
+          "role": "CLI entry point"
+        }
+      ],
+      "dependsOn": [
+        "src/commands",
+        "src/utils"
+      ]
+    },
+    {
+      "path": "src",
+      "fileCount": 1,
+      "files": [
+        {
+          "file": "src/constants.ts",
+          "lang": "ts",
+          "lines": 62,
+          "exports": [
+            "CONTEXT_DIR",
+            "CONTEXT_FILES",
+            "WATCH_PATTERNS",
+            "IGNORE_PATTERNS"
+          ],
+          "importedBy": 17,
+          "rank": 0.68
+        }
+      ],
+      "dependedOnBy": [
+        "src/commands",
+        "src/core",
+        "src/mcp",
+        "src/runtime"
+      ],
+      "tests": [
+        "tests/diff.test.ts",
+        "tests/export-formats.test.ts",
+        "tests/init.test.ts"
+      ]
+    },
+    {
+      "path": "src/commands",
+      "purpose": "Command handlers",
+      "fileCount": 15,
+      "files": [
+        {
+          "file": "src/commands/annotate.ts",
+          "lang": "ts",
+          "lines": 29,
+          "exports": [
+            "registerAnnotateCommand"
+          ],
+          "imports": [
+            "src/core/map-annotate.ts",
+            "src/runtime/context.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/compact.ts",
+          "lang": "ts",
+          "lines": 40,
+          "exports": [
+            "registerCompactCommand"
+          ],
+          "imports": [
+            "src/core/compact.ts",
+            "src/runtime/context.ts",
+            "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/decision.ts",
+          "lang": "ts",
+          "lines": 60,
+          "exports": [
+            "registerDecisionCommand"
+          ],
+          "imports": [
+            "src/core/decisions.ts",
+            "src/runtime/context.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/diff.ts",
+          "lang": "ts",
+          "lines": 57,
+          "exports": [
+            "DiffJson",
+            "formatDiffJson",
+            "formatDiffSummary",
+            "registerDiffCommand"
+          ],
+          "imports": [
+            "src/core/diff.ts",
+            "src/runtime/context.ts",
+            "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/export.ts",
+          "lang": "ts",
+          "lines": 151,
+          "exports": [
+            "registerExportCommand"
+          ],
+          "imports": [
+            "src/core/exporter.ts",
+            "src/runtime/context.ts",
+            "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/init.ts",
+          "lang": "ts",
+          "lines": 288,
+          "exports": [
+            "registerInitCommand",
+            "InitOptions",
+            "initContext"
+          ],
+          "imports": [
+            "src/commands/workspace.ts",
+            "src/constants.ts",
+            "src/core/claude-md-parser.ts",
+            "src/core/infer.ts",
+            "src/core/map-scanner.ts",
+            "src/core/merger.ts",
+            "src/core/state-manager.ts",
+            "src/runtime/context.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/locate.ts",
+          "lang": "ts",
+          "lines": 42,
+          "exports": [
+            "registerLocateCommand"
+          ],
+          "imports": [
+            "src/core/locate.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/mcp-config.ts",
+          "lang": "ts",
+          "lines": 96,
+          "exports": [
+            "renderMcpConfig",
+            "registerMcpConfigCommand"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/query.ts",
+          "lang": "ts",
+          "lines": 73,
+          "exports": [
+            "registerQueryCommand"
+          ],
+          "imports": [
+            "src/core/query-engine.ts",
+            "src/runtime/context.ts",
+            "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/serve.ts",
+          "lang": "ts",
+          "lines": 37,
+          "exports": [
+            "registerServeCommand"
+          ],
+          "imports": [
+            "src/core/workspace.ts",
+            "src/mcp/server.ts",
+            "src/runtime/context.ts",
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/share.ts",
+          "lang": "ts",
+          "lines": 146,
+          "exports": [
+            "registerShareCommand"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/core/exporter.ts",
+            "src/runtime/context.ts",
+            "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/update.ts",
+          "lang": "ts",
+          "lines": 150,
+          "exports": [
+            "UpdateOptions",
+            "update"
+          ],
+          "imports": [
+            "src/commands/workspace.ts",
+            "src/constants.ts",
+            "src/core/diff.ts",
+            "src/core/merger.ts",
+            "src/core/state-manager.ts",
+            "src/runtime/context.ts",
+            "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/validate.ts",
+          "lang": "ts",
+          "lines": 246,
+          "exports": [
+            "ValidationError",
+            "validateAgainstSchema",
+            "FileValidationResult",
+            "validateContextDir",
+            "registerValidateCommand"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/runtime/context.ts",
+            "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/watch.ts",
+          "lang": "ts",
+          "lines": 69,
+          "exports": [
+            "registerWatchCommand"
+          ],
+          "imports": [
+            "src/core/watcher.ts",
+            "src/runtime/context.ts",
+            "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/workspace.ts",
+          "lang": "ts",
+          "lines": 120,
+          "exports": [
+            "formatProjectListLine",
+            "printWorkspaceHint",
+            "registerWorkspaceCommands"
+          ],
+          "imports": [
+            "src/core/workspace.ts",
+            "src/runtime/home.ts",
+            "src/schema/index.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 3,
+          "rank": 0.12
+        }
+      ],
+      "dependsOn": [
+        "src",
+        "src/core",
+        "src/mcp",
+        "src/runtime",
+        "src/schema",
+        "src/utils"
+      ],
+      "dependedOnBy": [
+        "bin"
+      ],
+      "tests": [
+        "tests/diff.test.ts",
+        "tests/init.test.ts",
+        "tests/mcp-workspace.test.ts"
+      ]
+    },
+    {
+      "path": "src/core",
+      "purpose": "Core business logic",
+      "fileCount": 18,
+      "files": [
+        {
+          "file": "src/core/claude-md-parser.ts",
+          "lang": "ts",
+          "lines": 472,
+          "exports": [
+            "ClaudeMdData",
+            "parseClaudeMd"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/core/compact.ts",
+          "lang": "ts",
+          "lines": 9,
+          "exports": [
+            "exportCompact"
+          ],
+          "imports": [
+            "src/core/query-engine.ts"
+          ],
+          "importedBy": 2,
+          "rank": 0.08
+        },
+        {
+          "file": "src/core/decisions.ts",
+          "lang": "ts",
+          "lines": 58,
+          "exports": [
+            "DecisionInput",
+            "addDecision",
+            "listDecisions"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts",
+            "src/utils/time.ts"
+          ],
+          "importedBy": 2,
+          "rank": 0.08
+        },
+        {
+          "file": "src/core/diff.ts",
+          "lang": "ts",
+          "lines": 149,
+          "exports": [
+            "ContextChange",
+            "ContextSet",
+            "DiffResult",
+            "computeDiff",
+            "formatChanges"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/core/infer.ts",
+            "src/core/map-scanner.ts",
+            "src/core/merger.ts",
+            "src/core/state-manager.ts",
+            "src/runtime/context.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 2,
+          "rank": 0.08
+        },
+        {
+          "file": "src/core/exporter.ts",
+          "lang": "ts",
+          "lines": 475,
+          "exports": [
+            "exportToMarkdown",
+            "exportToJSON",
+            "exportToClaudeMd",
+            "exportToAgentsMd",
+            "ExportFormat",
+            "saveExport"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/core/map-format.ts",
+            "src/runtime/context.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 3,
+          "rank": 0.12
+        },
+        {
+          "file": "src/core/infer.ts",
+          "lang": "ts",
+          "lines": 1741,
+          "exports": [
+            "parsePyprojectToml",
+            "extractPyDepName",
+            "inferProjectMetadata",
+            "inferStack",
+            "inferArchitecture",
+            "inferConstraints"
+          ],
+          "imports": [
+            "src/core/source-scanner.ts",
+            "src/core/vocab.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts",
+            "src/utils/time.ts"
+          ],
+          "importedBy": 4,
+          "rank": 0.16
+        },
+        {
+          "file": "src/core/locate.ts",
+          "lang": "ts",
+          "lines": 306,
+          "exports": [
+            "LocateHit",
+            "LocateOptions",
+            "tokenize",
+            "locateInMap",
+            "loadLocateContext",
+            "locate",
+            "formatLocateText"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/runtime/context.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 2,
+          "rank": 0.08
+        },
+        {
+          "file": "src/core/map-annotate.ts",
+          "lang": "ts",
+          "lines": 60,
+          "exports": [
+            "AnnotateInput",
+            "normalizeModulePath",
+            "annotateModule",
+            "formatModuleLine"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/core/state-manager.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 2,
+          "rank": 0.08
+        },
+        {
+          "file": "src/core/map-format.ts",
+          "lang": "ts",
+          "lines": 170,
+          "exports": [
+            "topFiles",
+            "relativeToModule",
+            "length",
+            "filterMapByTopic",
+            "filterMapByScope",
+            "formatMapBody",
+            "formatMapSection",
+            "formatCompactMap",
+            "formatAgentGuideMap"
+          ],
+          "imports": [
+            "src/schema/index.ts"
+          ],
+          "importedBy": 3,
+          "rank": 0.12
+        },
+        {
+          "file": "src/core/map-scanner.ts",
+          "lang": "ts",
+          "lines": 899,
+          "exports": [
+            "isTestFile",
+            "MapLang",
+            "MapFile",
+            "MapModule",
+            "MapHub",
+            "CodeMap",
+            "BuildMapOptions",
+            "buildMap"
+          ],
+          "imports": [
+            "src/core/source-scanner.ts",
+            "src/core/vocab.ts",
+            "src/schema/index.ts"
+          ],
+          "importedBy": 3,
+          "rank": 0.12
+        },
+        {
+          "file": "src/core/merger.ts",
+          "lang": "ts",
+          "lines": 503,
+          "exports": [
+            "MergeResult",
+            "MergeChange",
+            "ContextMerger",
+            "trackMapFields"
+          ],
+          "imports": [
+            "src/core/state-manager.ts",
+            "src/schema/index.ts"
+          ],
+          "importedBy": 4,
+          "rank": 0.16
+        },
+        {
+          "file": "src/core/query-engine.ts",
+          "lang": "ts",
+          "lines": 659,
+          "exports": [
+            "estimateTokens",
+            "truncateToTokenBudget",
+            "ContextType",
+            "VALID_TYPES",
+            "QueryOptions",
+            "QueryResult",
+            "executeQuery",
+            "exportCompact"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/core/map-format.ts",
+            "src/runtime/context.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 3,
+          "rank": 0.12
+        },
+        {
+          "file": "src/core/source-scanner.ts",
+          "lang": "ts",
+          "lines": 621,
+          "exports": [
+            "SourceScanResult",
+            "HookInfo",
+            "ProviderInfo",
+            "RouteInfo",
+            "MiddlewareInfo",
+            "APIEndpointInfo",
+            "KeyFileInfo",
+            "SOURCE_EXTENSIONS",
+            "SKIP_DIRS",
+            "isTestFile",
+            "scanSources"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 2,
+          "rank": 0.08
+        },
+        {
+          "file": "src/core/state-manager.ts",
+          "lang": "ts",
+          "lines": 181,
+          "exports": [
+            "StateManager"
+          ],
+          "imports": [
+            "src/schema/state.ts",
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 7,
+          "rank": 0.28
+        },
+        {
+          "file": "src/core/updater.ts",
+          "lang": "ts",
+          "lines": 181,
+          "exports": [
+            "UpdateResult",
+            "updateContext",
+            "refreshAll"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/core/infer.ts",
+            "src/core/map-scanner.ts",
+            "src/core/merger.ts",
+            "src/core/state-manager.ts",
+            "src/runtime/context.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts",
+            "src/utils/time.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/core/vocab.ts",
+          "lang": "ts",
+          "lines": 112,
+          "exports": [
+            "DIRECTORY_PURPOSES",
+            "inferDirectoryPurpose"
+          ],
+          "importedBy": 2,
+          "rank": 0.08
+        },
+        {
+          "file": "src/core/watcher.ts",
+          "lang": "ts",
+          "lines": 183,
+          "exports": [
+            "WatchEvent",
+            "WatcherOptions",
+            "createWatcher",
+            "watchOnce"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/core/updater.ts",
+            "src/runtime/context.ts",
+            "src/utils/fs.ts",
+            "src/utils/time.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/core/workspace.ts",
+          "lang": "ts",
+          "lines": 303,
+          "exports": [
+            "loadWorkspace",
+            "saveWorkspace",
+            "findProject",
+            "addProject",
+            "removeProject",
+            "readManifest",
+            "buildWorkspaceIndex",
+            "saveWorkspaceIndex",
+            "loadWorkspaceIndex",
+            "refreshWorkspaceIndex",
+            "isInWorkspace"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/core/infer.ts",
+            "src/runtime/context.ts",
+            "src/runtime/home.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 3,
+          "rank": 0.12
+        }
+      ],
+      "dependsOn": [
+        "src",
+        "src/runtime",
+        "src/schema",
+        "src/utils"
+      ],
+      "dependedOnBy": [
+        "src/commands",
+        "src/mcp"
+      ],
+      "tests": [
+        "tests/decisions.test.ts",
+        "tests/diff.test.ts",
+        "tests/entry-points.test.ts",
+        "tests/export-formats.test.ts",
+        "tests/locate.test.ts",
+        "tests/map-merge.test.ts",
+        "tests/map-scanner.test.ts",
+        "tests/mcp-server.test.ts",
+        "tests/mcp-workspace.test.ts",
+        "tests/merge-preserve.test.ts",
+        "tests/python-inference.test.ts",
+        "tests/query.test.ts",
+        "tests/rust-go-inference.test.ts",
+        "tests/workspace.test.ts"
+      ]
+    },
+    {
+      "path": "src/mcp",
+      "purpose": "MCP server",
+      "fileCount": 3,
+      "files": [
+        {
+          "file": "src/mcp/format-projects.ts",
+          "lang": "ts",
+          "lines": 86,
+          "exports": [
+            "formatProjectBlock",
+            "formatProjects"
+          ],
+          "imports": [
+            "src/schema/index.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/mcp/resolver.ts",
+          "lang": "ts",
+          "lines": 114,
+          "exports": [
+            "ResolvedProject",
+            "ProjectResolver",
+            "singleProjectResolver",
+            "workspaceResolver",
+            "ensureFreshIndex"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/core/workspace.ts",
+            "src/runtime/context.ts",
+            "src/runtime/home.ts",
+            "src/schema/index.ts",
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/mcp/server.ts",
+          "lang": "ts",
+          "lines": 566,
+          "exports": [
+            "ServerOptions",
+            "createPreludeServer",
+            "ResolvedProject",
+            "ProjectResolver"
+          ],
+          "imports": [
+            "src/constants.ts",
+            "src/core/compact.ts",
+            "src/core/decisions.ts",
+            "src/core/exporter.ts",
+            "src/core/locate.ts",
+            "src/core/map-annotate.ts",
+            "src/core/map-format.ts",
+            "src/core/query-engine.ts",
+            "src/core/state-manager.ts",
+            "src/mcp/format-projects.ts",
+            "src/mcp/resolver.ts",
+            "src/schema/index.ts",
+            "src/schema/project.ts",
+            "src/utils/fs.ts",
+            "src/utils/version.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        }
+      ],
+      "dependsOn": [
+        "src",
+        "src/core",
+        "src/runtime",
+        "src/schema",
+        "src/utils"
+      ],
+      "dependedOnBy": [
+        "src/commands"
+      ],
+      "tests": [
+        "tests/mcp-server.test.ts",
+        "tests/mcp-workspace.test.ts"
+      ]
+    },
+    {
+      "path": "src/runtime",
+      "purpose": "Runtime environment helpers",
+      "fileCount": 2,
+      "files": [
+        {
+          "file": "src/runtime/context.ts",
+          "lang": "ts",
+          "lines": 20,
+          "exports": [
+            "resolveContextDir",
+            "isExternalBrainMode"
+          ],
+          "imports": [
+            "src/constants.ts"
+          ],
+          "importedBy": 20,
+          "rank": 0.8
+        },
+        {
+          "file": "src/runtime/home.ts",
+          "lang": "ts",
+          "lines": 19,
+          "exports": [
+            "resolvePreludeHome",
+            "workspaceFilePath",
+            "workspaceIndexPath"
+          ],
+          "importedBy": 3,
+          "rank": 0.12
+        }
+      ],
+      "dependsOn": [
+        "src"
+      ],
+      "dependedOnBy": [
+        "src/commands",
+        "src/core",
+        "src/mcp"
+      ],
+      "tests": [
+        "tests/context-dir.test.ts"
+      ]
+    },
+    {
+      "path": "src/schema",
+      "purpose": "Data schemas",
+      "fileCount": 10,
+      "files": [
+        {
+          "file": "src/schema/architecture.ts",
+          "lang": "ts",
+          "lines": 73,
+          "exports": [
+            "ArchitectureSchema",
+            "Architecture"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/schema/constraints.ts",
+          "lang": "ts",
+          "lines": 42,
+          "exports": [
+            "ConstraintsSchema",
+            "Constraints"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/schema/decisions.ts",
+          "lang": "ts",
+          "lines": 28,
+          "exports": [
+            "DecisionSchema",
+            "DecisionsSchema",
+            "Decision",
+            "Decisions"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/schema/index.ts",
+          "lang": "ts",
+          "lines": 7,
+          "imports": [
+            "src/schema/architecture.ts",
+            "src/schema/constraints.ts",
+            "src/schema/decisions.ts",
+            "src/schema/map.ts",
+            "src/schema/project.ts",
+            "src/schema/session.ts",
+            "src/schema/stack.ts",
+            "src/schema/workspace.ts"
+          ],
+          "importedBy": 18,
+          "rank": 0.72
+        },
+        {
+          "file": "src/schema/map.ts",
+          "lang": "ts",
+          "lines": 57,
+          "exports": [
+            "MapLangSchema",
+            "MapFileSchema",
+            "MapModuleSchema",
+            "MapHubSchema",
+            "MapSchema",
+            "MapLang",
+            "MapFile",
+            "MapModule",
+            "MapHub",
+            "CodeMap"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/schema/project.ts",
+          "lang": "ts",
+          "lines": 39,
+          "exports": [
+            "RELATION_TYPES",
+            "RelatedProjectSchema",
+            "ProjectSchema",
+            "RelatedProject",
+            "Project"
+          ],
+          "importedBy": 3,
+          "rank": 0.12
+        },
+        {
+          "file": "src/schema/session.ts",
+          "lang": "ts",
+          "lines": 33,
+          "exports": [
+            "SessionEntrySchema",
+            "SessionSchema",
+            "SessionsSchema",
+            "SessionEntry",
+            "Session",
+            "Sessions"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/schema/stack.ts",
+          "lang": "ts",
+          "lines": 26,
+          "exports": [
+            "StackSchema",
+            "Stack"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/schema/state.ts",
+          "lang": "ts",
+          "lines": 62,
+          "exports": [
+            "FieldStateSchema",
+            "FileStateSchema",
+            "PreludeStateSchema",
+            "FieldState",
+            "FileState",
+            "PreludeState",
+            "createInitialState",
+            "trackField"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/schema/workspace.ts",
+          "lang": "ts",
+          "lines": 58,
+          "exports": [
+            "WorkspaceProjectSchema",
+            "WorkspaceSchema",
+            "IndexedProjectSchema",
+            "WorkspaceIndexSchema",
+            "WorkspaceProject",
+            "Workspace",
+            "IndexedProject",
+            "WorkspaceIndex"
+          ],
+          "imports": [
+            "src/schema/project.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        }
+      ],
+      "dependedOnBy": [
+        "src/commands",
+        "src/core",
+        "src/mcp"
+      ],
+      "tests": [
+        "tests/locate.test.ts",
+        "tests/map-merge.test.ts"
+      ]
+    },
+    {
+      "path": "src/utils",
+      "purpose": "Utility functions",
+      "fileCount": 4,
+      "files": [
+        {
+          "file": "src/utils/fs.ts",
+          "lang": "ts",
+          "lines": 77,
+          "exports": [
+            "readJSON",
+            "writeJSON",
+            "readMarkdown",
+            "writeMarkdown",
+            "ensureDir",
+            "fileExists",
+            "isDirectory",
+            "listFiles",
+            "getDirectoryTree"
+          ],
+          "importedBy": 25,
+          "rank": 1
+        },
+        {
+          "file": "src/utils/log.ts",
+          "lang": "ts",
+          "lines": 51,
+          "exports": [
+            "logger",
+            "logTable",
+            "spinner"
+          ],
+          "importedBy": 13,
+          "rank": 0.52
+        },
+        {
+          "file": "src/utils/time.ts",
+          "lang": "ts",
+          "lines": 34,
+          "exports": [
+            "getCurrentTimestamp",
+            "formatTimestamp",
+            "getRelativeTime",
+            "generateId"
+          ],
+          "importedBy": 4,
+          "rank": 0.16
+        },
+        {
+          "file": "src/utils/version.ts",
+          "lang": "ts",
+          "lines": 27,
+          "exports": [
+            "getPackageVersion"
+          ],
+          "importedBy": 2,
+          "rank": 0.08
+        }
+      ],
+      "dependedOnBy": [
+        "bin",
+        "src/commands",
+        "src/core",
+        "src/mcp"
+      ],
+      "tests": [
+        "tests/export-formats.test.ts"
+      ]
+    },
+    {
+      "path": "tests",
+      "purpose": "Tests",
+      "fileCount": 16,
+      "files": [
+        {
+          "file": "tests/context-dir.test.ts",
+          "lang": "ts",
+          "lines": 29,
+          "imports": [
+            "src/runtime/context.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/decisions.test.ts",
+          "lang": "ts",
+          "lines": 32,
+          "imports": [
+            "src/core/decisions.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/diff.test.ts",
+          "lang": "ts",
+          "lines": 84,
+          "imports": [
+            "src/commands/diff.ts",
+            "src/commands/init.ts",
+            "src/constants.ts",
+            "src/core/diff.ts",
+            "src/core/map-annotate.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/entry-points.test.ts",
+          "lang": "ts",
+          "lines": 40,
+          "imports": [
+            "src/core/infer.ts",
+            "src/core/source-scanner.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/export-formats.test.ts",
+          "lang": "ts",
+          "lines": 194,
+          "imports": [
+            "src/constants.ts",
+            "src/core/exporter.ts",
+            "src/utils/fs.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/init.test.ts",
+          "lang": "ts",
+          "lines": 38,
+          "imports": [
+            "src/commands/init.ts",
+            "src/commands/validate.ts",
+            "src/constants.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/locate.test.ts",
+          "lang": "ts",
+          "lines": 130,
+          "imports": [
+            "src/core/locate.ts",
+            "src/schema/index.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/map-merge.test.ts",
+          "lang": "ts",
+          "lines": 125,
+          "imports": [
+            "src/core/merger.ts",
+            "src/core/state-manager.ts",
+            "src/schema/index.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/map-scanner.test.ts",
+          "lang": "ts",
+          "lines": 196,
+          "imports": [
+            "src/core/map-scanner.ts",
+            "src/core/vocab.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/mcp-server.test.ts",
+          "lang": "ts",
+          "lines": 305,
+          "imports": [
+            "src/core/merger.ts",
+            "src/core/state-manager.ts",
+            "src/mcp/server.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/mcp-workspace.test.ts",
+          "lang": "ts",
+          "lines": 213,
+          "imports": [
+            "src/commands/mcp-config.ts",
+            "src/core/workspace.ts",
+            "src/mcp/server.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/merge-preserve.test.ts",
+          "lang": "ts",
+          "lines": 180,
+          "imports": [
+            "src/core/merger.ts",
+            "src/core/state-manager.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/python-inference.test.ts",
+          "lang": "ts",
+          "lines": 341,
+          "imports": [
+            "src/core/infer.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/query.test.ts",
+          "lang": "ts",
+          "lines": 532,
+          "imports": [
+            "src/core/query-engine.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/rust-go-inference.test.ts",
+          "lang": "ts",
+          "lines": 201,
+          "imports": [
+            "src/core/infer.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/workspace.test.ts",
+          "lang": "ts",
+          "lines": 143,
+          "imports": [
+            "src/core/workspace.ts"
+          ],
+          "isTest": true
+        }
+      ]
+    }
+  ],
+  "hubs": [
+    {
+      "file": "src/utils/fs.ts",
+      "importedBy": 25,
+      "rank": 1,
+      "exports": [
+        "readJSON",
+        "writeJSON",
+        "readMarkdown",
+        "writeMarkdown",
+        "ensureDir"
+      ]
+    },
+    {
+      "file": "src/runtime/context.ts",
+      "importedBy": 20,
+      "rank": 0.8,
+      "exports": [
+        "resolveContextDir",
+        "isExternalBrainMode"
+      ]
+    },
+    {
+      "file": "src/schema/index.ts",
+      "importedBy": 18,
+      "rank": 0.72
+    },
+    {
+      "file": "src/constants.ts",
+      "importedBy": 17,
+      "rank": 0.68,
+      "exports": [
+        "CONTEXT_DIR",
+        "CONTEXT_FILES",
+        "WATCH_PATTERNS",
+        "IGNORE_PATTERNS"
+      ]
+    },
+    {
+      "file": "src/utils/log.ts",
+      "importedBy": 13,
+      "rank": 0.52,
+      "exports": [
+        "logger",
+        "logTable",
+        "spinner"
+      ]
+    },
+    {
+      "file": "src/core/state-manager.ts",
+      "importedBy": 7,
+      "rank": 0.28,
+      "exports": [
+        "StateManager"
+      ]
+    },
+    {
+      "file": "src/core/infer.ts",
+      "importedBy": 4,
+      "rank": 0.16,
+      "exports": [
+        "parsePyprojectToml",
+        "extractPyDepName",
+        "inferProjectMetadata",
+        "inferStack",
+        "inferArchitecture"
+      ]
+    },
+    {
+      "file": "src/core/merger.ts",
+      "importedBy": 4,
+      "rank": 0.16,
+      "exports": [
+        "MergeResult",
+        "MergeChange",
+        "ContextMerger",
+        "trackMapFields"
+      ]
+    },
+    {
+      "file": "src/utils/time.ts",
+      "importedBy": 4,
+      "rank": 0.16,
+      "exports": [
+        "getCurrentTimestamp",
+        "formatTimestamp",
+        "getRelativeTime",
+        "generateId"
+      ]
+    },
+    {
+      "file": "src/commands/workspace.ts",
+      "importedBy": 3,
+      "rank": 0.12,
+      "exports": [
+        "formatProjectListLine",
+        "printWorkspaceHint",
+        "registerWorkspaceCommands"
+      ]
+    },
+    {
+      "file": "src/core/exporter.ts",
+      "importedBy": 3,
+      "rank": 0.12,
+      "exports": [
+        "exportToMarkdown",
+        "exportToJSON",
+        "exportToClaudeMd",
+        "exportToAgentsMd",
+        "ExportFormat"
+      ]
+    },
+    {
+      "file": "src/core/map-format.ts",
+      "importedBy": 3,
+      "rank": 0.12,
+      "exports": [
+        "topFiles",
+        "relativeToModule",
+        "length",
+        "filterMapByTopic",
+        "filterMapByScope"
+      ]
+    },
+    {
+      "file": "src/core/map-scanner.ts",
+      "importedBy": 3,
+      "rank": 0.12,
+      "exports": [
+        "isTestFile",
+        "MapLang",
+        "MapFile",
+        "MapModule",
+        "MapHub"
+      ]
+    },
+    {
+      "file": "src/core/query-engine.ts",
+      "importedBy": 3,
+      "rank": 0.12,
+      "exports": [
+        "estimateTokens",
+        "truncateToTokenBudget",
+        "ContextType",
+        "VALID_TYPES",
+        "QueryOptions"
+      ]
+    },
+    {
+      "file": "src/core/workspace.ts",
+      "importedBy": 3,
+      "rank": 0.12,
+      "exports": [
+        "loadWorkspace",
+        "saveWorkspace",
+        "findProject",
+        "addProject",
+        "removeProject"
+      ]
+    }
+  ]
+}

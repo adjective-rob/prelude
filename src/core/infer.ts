@@ -1051,6 +1051,51 @@ export async function inferStack(rootDir: string): Promise<Stack> {
   return stack as Stack;
 }
 
+/**
+ * Find Node CLI entry points. `bin` targets like `dist/bin/cli.js` are mapped
+ * back to their source (`bin/cli.ts`) when that file exists.
+ */
+async function detectNodeBinEntryPoints(rootDir: string): Promise<string[]> {
+  const found: string[] = [];
+  try {
+    const pkgPath = join(rootDir, 'package.json');
+    if (await fileExists(pkgPath)) {
+      const pkg = await readJSON<any>(pkgPath);
+      const bins: string[] = typeof pkg.bin === 'string' ? [pkg.bin] : Object.values(pkg.bin ?? {}).filter((v): v is string => typeof v === 'string');
+      for (const raw of bins) {
+        const target = raw.replace(/^\.\//, '');
+        const sourceGuesses = [
+          target,
+          target.replace(/^(dist|build|lib|out)\//, '').replace(/\.[cm]?js$/, '.ts'),
+          target.replace(/^(dist|build|lib|out)\//, ''),
+        ];
+        for (const guess of sourceGuesses) {
+          if (await fileExists(join(rootDir, guess)) && !guess.match(/^(dist|build|out)\//)) {
+            if (!found.includes(guess)) found.push(guess);
+            break;
+          }
+        }
+      }
+    }
+  } catch {}
+
+  try {
+    const binDir = join(rootDir, 'bin');
+    const entries = await readdir(binDir);
+    for (const name of entries.sort()) {
+      if (!/\.(?:[cm]?[jt]s)$/.test(name)) continue;
+      const rel = `bin/${name}`;
+      if (found.includes(rel)) continue;
+      try {
+        const head = (await readFile(join(binDir, name), 'utf-8')).slice(0, 64);
+        if (head.startsWith('#!')) found.push(rel);
+      } catch {}
+    }
+  } catch {}
+
+  return found;
+}
+
 export async function inferArchitecture(rootDir: string): Promise<Architecture> {
   // --- MODIFIED INITIALIZATION ---
   const architecture: Partial<Architecture> = {
@@ -1128,6 +1173,15 @@ export async function inferArchitecture(rootDir: string): Promise<Architecture> 
         ['django', 'flask', 'fastapi', 'starlette', 'sanic', 'tornado', 'falcon', 'litestar'].includes(d)
       );
     } catch {}
+  }
+
+  // Node CLI entry points: package.json "bin" (mapped back to source when it
+  // points into a build dir) and bin/ files with a shebang
+  for (const file of await detectNodeBinEntryPoints(rootDir)) {
+    architecture.entryPoints = architecture.entryPoints || [];
+    if (!architecture.entryPoints.some(e => e.file === file)) {
+      architecture.entryPoints.push({ file, purpose: 'CLI entry point' });
+    }
   }
 
   // Python-specific entry points

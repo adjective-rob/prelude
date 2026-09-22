@@ -1,7 +1,9 @@
 import { readdir, readFile, stat } from 'fs/promises';
 import { join, extname, basename, posix } from 'path';
 import type { Architecture, MapLang, MapFile, MapModule, MapHub, CodeMap } from '../schema/index.js';
-import { SKIP_DIRS, SOURCE_EXTENSIONS } from './source-scanner.js';
+import { SKIP_DIRS, SOURCE_EXTENSIONS, isTestFile } from './source-scanner.js';
+
+export { isTestFile };
 import { inferDirectoryPurpose } from './vocab.js';
 
 /**
@@ -81,22 +83,6 @@ async function walkSourceFiles(rootDir: string, maxFiles: number): Promise<{ fil
   await walk(rootDir, '', 0);
   files.sort();
   return { files, truncated };
-}
-
-const TEST_DIR_MARKERS = ['/tests/', '/test/', '/__tests__/', '/spec/'];
-const TEST_BASENAME_PATTERNS = [
-  /\.(test|spec)\.[cm]?[jt]sx?$/,
-  /^test_.*\.py$/,
-  /_test\.py$/,
-  /^conftest\.py$/,
-  /_test\.go$/,
-];
-
-export function isTestFile(file: string): boolean {
-  const withSlash = '/' + file;
-  if (TEST_DIR_MARKERS.some(m => withSlash.includes(m))) return true;
-  const base = basename(file);
-  return TEST_BASENAME_PATTERNS.some(re => re.test(base));
 }
 
 // --- Comment stripping ---
@@ -252,7 +238,12 @@ function extractJsExports(src: string): string[] {
     /^\s*export\s+(?:default\s+)?(?:declare\s+)?(?:async\s+)?(?:function\*?|class|const|let|var|interface|type|enum|abstract\s+class)\s+([A-Za-z_$][\w$]*)/gm,
     m => [m[1]]
   );
-  push(/^\s*export\s+(?:type\s+)?\{([^}]*)\}/gm, m => splitNameList(m[1]));
+  // Re-exports (`export { x } from './y'`) sort after the file's own
+  // declarations: they describe another file, so they are weaker routing signal
+  for (const m of src.matchAll(/^\s*export\s+(?:type\s+)?\{([^}]*)\}(\s*from\b)?/gm)) {
+    const offset = m[2] ? src.length : 0;
+    for (const name of splitNameList(m[1])) pairs.push([offset + (m.index ?? 0), name]);
+  }
   push(/^\s*export\s+default\s+([A-Za-z_$][\w$]*)\s*;?\s*$/gm, m =>
     ['function', 'class', 'async', 'abstract'].includes(m[1]) ? [] : [m[1]]
   );

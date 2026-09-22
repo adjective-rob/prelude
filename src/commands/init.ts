@@ -1,6 +1,6 @@
 import type { CAC } from 'cac';
 import { join } from 'path';
-import { ensureDir, writeJSON, writeMarkdown, fileExists } from '../utils/fs.js';
+import { ensureDir, writeJSON, writeMarkdown, fileExists, readJSON } from '../utils/fs.js';
 import { logger, spinner } from '../utils/log.js';
 import { CONTEXT_FILES } from '../constants.js';
 import {
@@ -79,6 +79,13 @@ export async function initContext(rootDir: string, options: InitOptions = {}): P
     const project = await inferProjectMetadata(rootDir);
     if (claudeData) {
       mergeProjectData(project, claudeData);
+    }
+    // A re-init (--force) keeps the original creation time
+    try {
+      const previous = await readJSON<Project>(join(contextDir, CONTEXT_FILES.PROJECT));
+      if (previous?.createdAt) project.createdAt = previous.createdAt;
+    } catch {
+      // no previous project.json
     }
     await writeJSON(join(contextDir, CONTEXT_FILES.PROJECT), project);
     projectSpin.stop('✓ Generated project.json');
