@@ -4,6 +4,7 @@
 name: Prelude Context Update
 
 on:
+  pull_request:
   push:
     branches: [main]
     paths:
@@ -24,7 +25,34 @@ permissions:
   pull-requests: write
 
 jobs:
+  # Fail pull requests whose committed .context/ has drifted from the code.
+  # Builds this repo's own CLI so the check always matches the code under review.
+  check-context:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Build prelude
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Check context drift
+        run: node dist/bin/prelude.js diff --check
+
   update-context:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

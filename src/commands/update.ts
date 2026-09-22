@@ -1,17 +1,15 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { StateManager } from '../core/state-manager.js';
-import { ContextMerger, trackMapFields, type MergeChange } from '../core/merger.js';
-import { buildMap } from '../core/map-scanner.js';
-import { inferProjectMetadata, inferStack, inferArchitecture, inferConstraints } from '../core/infer.js';
-import { readJSON, writeJSON } from '../utils/fs.js';
+import { trackMapFields } from '../core/merger.js';
+import { computeDiff, formatChanges } from '../core/diff.js';
+import { writeJSON } from '../utils/fs.js';
 import { logger } from '../utils/log.js';
 import { resolveContextDir } from '../runtime/context.js';
 import { CONTEXT_FILES } from '../constants.js';
-import type { Project, Stack, Architecture, Constraints, CodeMap } from '../schema/index.js';
 
 export interface UpdateOptions {
-  force?: boolean;      // Overwrite everything except decisions/changelog
+  force?: boolean;      // Write everything even when nothing drifted
   dryRun?: boolean;     // Show what would change without applying
   interactive?: boolean; // Prompt for each change
   silent?: boolean;     // Minimal output
@@ -21,8 +19,9 @@ export interface UpdateOptions {
  * Update context by re-analyzing codebase
  */
 export async function update(options: UpdateOptions = {}) {
-  const contextDir = resolveContextDir(process.cwd());
-  
+  const rootDir = process.cwd();
+  const contextDir = resolveContextDir(rootDir);
+
   // Check if context exists
   if (!existsSync(contextDir)) {
     logger.error('No .context directory found. Run `prelude init` first.');
@@ -34,77 +33,35 @@ export async function update(options: UpdateOptions = {}) {
   }
 
   try {
-    // Initialize state manager
-    const stateManager = new StateManager(contextDir);
-    
-    // Create backup before updating
-    if (!options.dryRun) {
-      stateManager.backup();
-      if (!options.silent) {
-        logger.success('✓ Created backup of current state');
-      }
-    }
-
-    // Read existing context
-    const existing = {
-      project: await readJSON<Project>(join(contextDir, 'project.json')),
-      stack: await readJSON<Stack>(join(contextDir, 'stack.json')),
-      architecture: await readJSON<Architecture>(join(contextDir, 'architecture.json')),
-      constraints: await readJSON<Constraints>(join(contextDir, 'constraints.json')),
-      map: await readExistingMap(contextDir),
-    };
-
-    // Re-infer from codebase
     if (!options.silent) {
       logger.info('Analyzing codebase...');
     }
-    
-    const inferred = {
-      project: await inferProjectMetadata(process.cwd()),
-      stack: await inferStack(process.cwd()),
-      architecture: await inferArchitecture(process.cwd()),
-      constraints: await inferConstraints(process.cwd()),
-    };
-    const inferredMap = await safeBuildMap(process.cwd(), inferred.architecture);
 
-    if (options.force) {
-      // Force mode: overwrite everything except decisions/changelog
-      return await forceUpdate(contextDir, { ...inferred, map: inferredMap }, options);
+    const diff = await computeDiff(rootDir, {
+      onMapError: (e) => logger.warn(`Skipping map.json: ${e instanceof Error ? e.message : String(e)}`),
+    });
+    const { merged, inferred, stateManager } = diff;
+
+    if (options.force && options.dryRun) {
+      logger.info('🔍 Force mode would overwrite all inferred context files');
+      logger.info('(decisions.json, changelog.md, and hand-curated fields preserved)');
+      return;
     }
 
-    // Smart merge mode
-    const merger = new ContextMerger(stateManager);
-    
-    const projectResult = merger.mergeProject(existing.project, inferred.project);
-    const stackResult = merger.mergeStack(existing.stack, inferred.stack);
-    const architectureResult = merger.mergeArchitecture(existing.architecture, inferred.architecture);
-    const constraintsResult = merger.mergeConstraints(existing.constraints, inferred.constraints);
-    const mapResult = inferredMap ? merger.mergeMap(existing.map, inferredMap) : undefined;
-
-    const allChanges = [
-      ...projectResult.changes.map(c => ({ file: 'project.json', ...c })),
-      ...stackResult.changes.map(c => ({ file: 'stack.json', ...c })),
-      ...architectureResult.changes.map(c => ({ file: 'architecture.json', ...c })),
-      ...constraintsResult.changes.map(c => ({ file: 'constraints.json', ...c })),
-      ...(mapResult?.changes ?? []).map(c => ({ file: 'map.json', ...c })),
-    ];
-
-    // Show changes
-    if (allChanges.length === 0) {
-      // Rank/export churn is not reported, but keep map.json current
-      if (!options.dryRun && mapResult && inferredMap) {
-        await writeJSON(join(contextDir, CONTEXT_FILES.MAP), mapResult.merged);
-        trackMapFields(stateManager, mapResult.merged, inferredMap);
+    if (!options.force && diff.drift.length === 0) {
+      // Rank/export churn is not drift, but keep map.json current
+      if (!options.dryRun && merged.map && inferred.map) {
+        await writeJSON(join(contextDir, CONTEXT_FILES.MAP), merged.map);
+        trackMapFields(stateManager, merged.map, inferred.map);
         stateManager.save();
       }
       logger.success('✓ Context is up to date, no changes needed');
       return;
     }
 
-    if (!options.silent) {
+    if (!options.silent && diff.changes.length > 0) {
       console.log('');
-      displayChanges(allChanges);
-      console.log('');
+      console.log(formatChanges(diff.changes, { color: true }));
     }
 
     // Dry run - don't apply changes
@@ -117,32 +74,41 @@ export async function update(options: UpdateOptions = {}) {
     // Interactive mode - prompt for each change
     if (options.interactive) {
       logger.warn('Interactive mode not yet implemented - applying all changes');
-      // TODO: Implement interactive prompts
+    }
+
+    // Create backup before updating
+    stateManager.backup();
+    if (!options.silent) {
+      logger.success('✓ Created backup of current state');
     }
 
     // Apply changes
-    await writeJSON(join(contextDir, 'project.json'), projectResult.merged);
-    await writeJSON(join(contextDir, 'stack.json'), stackResult.merged);
-    await writeJSON(join(contextDir, 'architecture.json'), architectureResult.merged);
-    await writeJSON(join(contextDir, 'constraints.json'), constraintsResult.merged);
-    if (mapResult) {
-      await writeJSON(join(contextDir, CONTEXT_FILES.MAP), mapResult.merged);
+    await writeJSON(join(contextDir, CONTEXT_FILES.PROJECT), merged.project);
+    await writeJSON(join(contextDir, CONTEXT_FILES.STACK), merged.stack);
+    await writeJSON(join(contextDir, CONTEXT_FILES.ARCHITECTURE), merged.architecture);
+    await writeJSON(join(contextDir, CONTEXT_FILES.CONSTRAINTS), merged.constraints);
+    if (merged.map) {
+      await writeJSON(join(contextDir, CONTEXT_FILES.MAP), merged.map);
     }
 
     // Update state tracking
-    trackAllFields(stateManager, 'project.json', projectResult.merged, inferred.project);
-    trackAllFields(stateManager, 'stack.json', stackResult.merged, inferred.stack);
-    trackAllFields(stateManager, 'architecture.json', architectureResult.merged, inferred.architecture);
-    trackAllFields(stateManager, 'constraints.json', constraintsResult.merged, inferred.constraints);
-    if (mapResult && inferredMap) {
-      trackMapFields(stateManager, mapResult.merged, inferredMap);
+    trackAllFields(stateManager, CONTEXT_FILES.PROJECT, merged.project, inferred.project);
+    trackAllFields(stateManager, CONTEXT_FILES.STACK, merged.stack, inferred.stack);
+    trackAllFields(stateManager, CONTEXT_FILES.ARCHITECTURE, merged.architecture, inferred.architecture);
+    trackAllFields(stateManager, CONTEXT_FILES.CONSTRAINTS, merged.constraints, inferred.constraints);
+    if (merged.map && inferred.map) {
+      trackMapFields(stateManager, merged.map, inferred.map);
     }
-
     stateManager.save();
 
     if (!options.silent) {
-      logger.success(`\n✅ Context updated successfully! (${allChanges.length} changes applied)`);
-      logger.info('ℹ️  Run `prelude export` to generate fresh output');
+      if (options.force) {
+        logger.success('✅ Force update complete');
+        logger.info('ℹ️  All context files overwritten (except decisions.json and changelog.md)');
+      } else {
+        logger.success(`\n✅ Context updated successfully! (${diff.drift.length} changes applied)`);
+        logger.info('ℹ️  Run `prelude export` to generate fresh output');
+      }
     }
 
   } catch (error: any) {
@@ -151,174 +117,8 @@ export async function update(options: UpdateOptions = {}) {
   }
 }
 
-/**
- * Force update - re-infers everything but preserves existing fields that
- * inference can't produce. Inferred fields always win; existing fields
- * are kept only when the inference engine returned nothing for them.
- */
-async function forceUpdate(
-  contextDir: string,
-  inferred: any,
-  options: UpdateOptions
-) {
-  if (options.dryRun) {
-    logger.info('🔍 Force mode would overwrite all inferred context files');
-    logger.info('(decisions.json, changelog.md, and hand-curated fields preserved)');
-    return;
-  }
-
-  // Read existing context so we can merge
-  const existing = {
-    project: await safeReadJSON<Project>(join(contextDir, 'project.json')),
-    stack: await safeReadJSON<Stack>(join(contextDir, 'stack.json')),
-    architecture: await safeReadJSON<Architecture>(join(contextDir, 'architecture.json')),
-    constraints: await safeReadJSON<Constraints>(join(contextDir, 'constraints.json')),
-    map: await readExistingMap(contextDir),
-  };
-
-  // Use the full ContextMerger for project (preserves name, description, team, goals).
-  // Use mergePreserving for the rest — inferred wins, existing preserved when empty.
-  const stateManager = new StateManager(contextDir);
-  const merger = new ContextMerger(stateManager);
-  const projectResult = merger.mergeProject(existing.project, inferred.project);
-  const stackResult = merger.mergeStack(existing.stack, inferred.stack);
-  const archResult = merger.mergeArchitecture(existing.architecture, inferred.architecture);
-  const constraintsResult = merger.mergeConstraints(existing.constraints, inferred.constraints);
-
-  await writeJSON(join(contextDir, 'project.json'), projectResult.merged);
-  await writeJSON(join(contextDir, 'stack.json'), stackResult.merged);
-  await writeJSON(join(contextDir, 'architecture.json'), archResult.merged);
-  await writeJSON(join(contextDir, 'constraints.json'), constraintsResult.merged);
-
-  // Manual module purposes survive force, like project name does
-  if (inferred.map) {
-    const mapResult = merger.mergeMap(existing.map, inferred.map);
-    await writeJSON(join(contextDir, CONTEXT_FILES.MAP), mapResult.merged);
-    trackMapFields(stateManager, mapResult.merged, inferred.map);
-    stateManager.save();
-  }
-
-  // Preserve decisions and changelog (they're already on disk)
-
-  if (!options.silent) {
-    logger.success('✅ Force update complete');
-    logger.info('ℹ️  All context files overwritten (except decisions.json and changelog.md)');
-  }
-}
-
-/**
- * Read map.json if present. Projects initialised before map.json existed
- * have no file; treat that (or an empty object) as undefined.
- */
-async function readExistingMap(contextDir: string): Promise<CodeMap | undefined> {
-  const map = await safeReadJSON<CodeMap>(join(contextDir, CONTEXT_FILES.MAP));
-  return map && Array.isArray(map.modules) ? map : undefined;
-}
-
-/**
- * Build the code map, logging a warning instead of failing the update.
- */
-async function safeBuildMap(rootDir: string, architecture: Architecture): Promise<CodeMap | undefined> {
-  try {
-    return await buildMap(rootDir, { architecture });
-  } catch (error) {
-    logger.warn(`Skipping map.json: ${error instanceof Error ? error.message : String(error)}`);
-    return undefined;
-  }
-}
-
-/**
- * Safely read JSON, returning empty object if file doesn't exist or is invalid.
- */
-async function safeReadJSON<T>(path: string): Promise<T> {
-  try {
-    return await readJSON<T>(path);
-  } catch {
-    return {} as T;
-  }
-}
-
-/**
- * Merge inferred data over existing, preserving existing fields that
- * inference returned empty/undefined for.
- *
- * Rule: inferred non-empty values always win. Existing values are kept
- * only when the inferred value is undefined, null, empty string, empty
- * array, or empty object.
- */
-function mergePreserving(existing: any, inferred: any): any {
-  if (!existing || typeof existing !== 'object') return inferred;
-  if (!inferred || typeof inferred !== 'object') return existing;
-
-  const merged = { ...existing };
-
-  // Overlay all inferred fields
-  for (const key of Object.keys(inferred)) {
-    const val = inferred[key];
-    if (val === undefined || val === null) continue;
-
-    // Empty array — keep existing if it has content
-    if (Array.isArray(val) && val.length === 0) {
-      if (Array.isArray(existing[key]) && existing[key].length > 0) continue;
-    }
-
-    // Empty object — keep existing if it has content
-    if (typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length === 0) {
-      if (typeof existing[key] === 'object' && existing[key] !== null &&
-          !Array.isArray(existing[key]) && Object.keys(existing[key]).length > 0) continue;
-    }
-
-    // Empty string — keep existing if it has content
-    if (val === '' && existing[key] && typeof existing[key] === 'string' && existing[key].length > 0) continue;
-
-    merged[key] = val;
-  }
-
-  return merged;
-}
-
-/**
- * Display changes in a readable format
- */
-function displayChanges(changes: Array<MergeChange & { file: string }>) {
-  const grouped = changes.reduce((acc, change) => {
-    if (!acc[change.file]) acc[change.file] = [];
-    acc[change.file].push(change);
-    return acc;
-  }, {} as Record<string, MergeChange[]>);
-
-  for (const [file, fileChanges] of Object.entries(grouped)) {
-    logger.info(`📄 ${file}:`);
-    
-    for (const change of fileChanges) {
-      const icon = {
-        added: '  + ',
-        removed: '  - ',
-        modified: '  ~ ',
-        preserved: '  ✓ ',
-      }[change.type];
-
-      const color = {
-        added: '\x1b[32m',    // Green
-        removed: '\x1b[31m',  // Red
-        modified: '\x1b[33m', // Yellow
-        preserved: '\x1b[36m', // Cyan
-      }[change.type];
-
-      const reset = '\x1b[0m';
-
-      console.log(`${icon}${color}${change.field}${reset} - ${change.reason}`);
-      
-      if (change.oldValue !== undefined) {
-        console.log(`    Old: ${JSON.stringify(change.oldValue)}`);
-      }
-      if (change.newValue !== undefined) {
-        console.log(`    New: ${JSON.stringify(change.newValue)}`);
-      }
-    }
-    console.log('');
-  }
-}
+// Bookkeeping fields: never tracked, so they can never become "manual"
+const UNTRACKED_FIELDS = new Set(['createdAt', 'updatedAt', '$schema', 'version']);
 
 /**
  * Track all fields in state manager
@@ -330,12 +130,13 @@ function trackAllFields(
   inferred: any
 ) {
   for (const key of Object.keys(merged)) {
+    if (UNTRACKED_FIELDS.has(key)) continue;
     const mergedValue = merged[key];
     const inferredValue = inferred[key];
-    
+
     // Skip undefined values
     if (mergedValue === undefined) continue;
-    
+
     // If values are the same, track as inferred
     if (JSON.stringify(mergedValue) === JSON.stringify(inferredValue)) {
       stateManager.trackInferred(file, key, mergedValue);

@@ -22,6 +22,7 @@ import { registerMcpConfigCommand } from '../src/commands/mcp-config.js';
 import { registerValidateCommand } from '../src/commands/validate.js';
 import { registerLocateCommand } from '../src/commands/locate.js';
 import { registerAnnotateCommand } from '../src/commands/annotate.js';
+import { registerDiffCommand } from '../src/commands/diff.js';
 import { update } from '../src/commands/update.js';
 
 // Register all commands
@@ -37,6 +38,7 @@ registerMcpConfigCommand(cli);
 registerValidateCommand(cli);
 registerLocateCommand(cli);
 registerAnnotateCommand(cli);
+registerDiffCommand(cli);
 
 // Register update command
 cli

@@ -1,5 +1,5 @@
 name: "Prelude Context Update"
-description: "Automatically update .context/ files when your codebase changes"
+description: "Keep .context/ in sync with your code. Guard mode (check: true) fails the job when committed context has drifted; update mode (default) runs prelude update and opens a PR."
 
 branding:
   icon: "file-text"
@@ -18,6 +18,10 @@ inputs:
     description: "Directory to run prelude in"
     required: false
     default: "."
+  check:
+    description: "Guard mode: run `prelude diff --check` and fail the job when .context/ has drifted from the code"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -26,21 +30,30 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: "18"
+        node-version: "20"
 
     # 2. Install prelude-context
     - name: Install prelude-context
       shell: bash
       run: npm install -g prelude-context@${{ inputs.version }}
 
-    # 3. Run prelude
+    # 3. Guard mode: fail on drift
+    - name: Check context drift
+      if: inputs.check == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: prelude diff --check
+
+    # 4. Run prelude
     - name: Run prelude
+      if: inputs.check != 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: prelude ${{ inputs.args }}
 
-    # 4. Check for changes in .context/
+    # 5. Check for changes in .context/
     - name: Check for .context/ changes
+      if: inputs.check != 'true'
       id: changes
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -54,9 +67,9 @@ runs:
           git diff --stat .context/
         fi
 
-    # 5. Commit changes and open a PR
+    # 6. Commit changes and open a PR
     - name: Create Pull Request
-      if: steps.changes.outputs.changed == 'true'
+      if: inputs.check != 'true' && steps.changes.outputs.changed == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:

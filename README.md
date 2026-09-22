@@ -317,25 +317,36 @@ prelude mcp-config --root /path/to/project   # Specify project root
 
 ## GitHub Action
 
-Prelude ships with a GitHub Action to automatically keep `.context/` files up to date:
+Prelude ships with a GitHub Action with two modes. **Guard** (`check: "true"`) only runs `prelude diff --check` and fails the job when the committed `.context/` has drifted from the code. **Update** (the default) runs `prelude update` and opens a PR when `.context/` changed. Use both: guard pull requests, update on main.
 
 ```yaml
 # .github/workflows/prelude.yml
-name: Update Context
+name: Prelude Context
 on:
+  pull_request:
   push:
     branches: [main]
     paths: [package.json, pyproject.toml, Cargo.toml, go.mod, "src/**"]
 
 jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: adjective-rob/prelude@main
+        with:
+          check: "true"
+
   update:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: adjective-rob/prelude@main
 ```
 
-The action runs `prelude update` and opens a PR if `.context/` files changed. See [action.yml](./action.yml) for configuration options.
+Locally, `prelude diff` prints what `prelude update` would change without writing, and `prelude diff --check` exits 1 on drift (`--format json` for machines, `--all` to include preserved manual edits). See [action.yml](./action.yml) for configuration options.
 
 ---
 

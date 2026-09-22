@@ -33,8 +33,15 @@ export class ContextMerger {
     const changes: MergeChange[] = [];
     const merged: Project = { ...inferred };
 
+    // Timestamps are bookkeeping, not content: never tracked, never reported.
+    // createdAt is carried forward; updatedAt is set below.
+    const timestampFields = ['createdAt', 'updatedAt'];
+    if (existing.createdAt) merged.createdAt = existing.createdAt;
+
     // Always preserve manual fields
-    const manualFields = this.stateManager.getManualFields('project.json');
+    const manualFields = this.stateManager
+      .getManualFields('project.json')
+      .filter(field => !timestampFields.includes(field));
     
     for (const field of manualFields) {
       const existingValue = this.getNestedValue(existing, field);
@@ -78,7 +85,8 @@ export class ContextMerger {
 
     // Check for new inferred changes
     for (const key of Object.keys(inferred) as Array<keyof Project>) {
-      if (preserveFields.includes(key as string) || manualFields.includes(key as string)) {
+      if (preserveFields.includes(key as string) || manualFields.includes(key as string) ||
+          timestampFields.includes(key as string)) {
         continue;
       }
 
