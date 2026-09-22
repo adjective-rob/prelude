@@ -34,6 +34,7 @@ import { registerCompactCommand } from '../src/commands/compact.js';
 import { registerServeCommand } from '../src/commands/serve.js';
 import { registerMcpConfigCommand } from '../src/commands/mcp-config.js';
 import { registerValidateCommand } from '../src/commands/validate.js';
+import { registerLocateCommand } from '../src/commands/locate.js';
 import { update } from '../src/commands/update.js';
 
 // Register all commands
@@ -47,6 +48,7 @@ registerCompactCommand(cli);
 registerServeCommand(cli);
 registerMcpConfigCommand(cli);
 registerValidateCommand(cli);
+registerLocateCommand(cli);
 
 // Register update command
 cli

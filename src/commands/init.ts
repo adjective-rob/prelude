@@ -143,13 +143,22 @@ export async function initContext(rootDir: string, options: InitOptions = {}): P
     logger.error(`Failed to generate constraints.json: ${error}`);
   }
   
-  // Create empty decisions.json
-  await writeJSON(join(contextDir, CONTEXT_FILES.DECISIONS), { decisions: [] });
-  logger.success('✓ Created decisions.json');
-  
-  // Create empty changelog.md
-  await writeMarkdown(join(contextDir, CONTEXT_FILES.CHANGELOG), '# Changelog\n\n');
-  logger.success('✓ Created changelog.md');
+  // Decisions and changelog are never inferred: keep them on --force
+  const decisionsPath = join(contextDir, CONTEXT_FILES.DECISIONS);
+  if (await fileExists(decisionsPath)) {
+    logger.success('✓ Kept existing decisions.json');
+  } else {
+    await writeJSON(decisionsPath, { decisions: [] });
+    logger.success('✓ Created decisions.json');
+  }
+
+  const changelogPath = join(contextDir, CONTEXT_FILES.CHANGELOG);
+  if (await fileExists(changelogPath)) {
+    logger.success('✓ Kept existing changelog.md');
+  } else {
+    await writeMarkdown(changelogPath, '# Changelog\n\n');
+    logger.success('✓ Created changelog.md');
+  }
   
   logger.success('🎉 Prelude context initialized successfully!');
   if (claudeData) {
