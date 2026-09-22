@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtemp, rm } from 'fs/promises';
+import { mkdtemp, rm, readFile } from 'fs/promises';
 import { join, basename } from 'path';
 import { tmpdir } from 'os';
 import { writeJSON, ensureDir } from '../src/utils/fs.js';
 import { CONTEXT_DIR, CONTEXT_FILES } from '../src/constants.js';
-import { exportToClaudeMd, exportToMarkdown } from '../src/core/exporter.js';
+import { exportToClaudeMd, exportToMarkdown, saveExport } from '../src/core/exporter.js';
 
 describe('CLAUDE.md export format', () => {
   let tempDir: string;
@@ -133,5 +133,62 @@ describe('export in external brain mode (PRELUDE_ROOT)', () => {
     process.env.PRELUDE_ROOT = brainDir;
     const content = await exportToMarkdown(projectDir);
     expect(content).toContain('brain-project');
+  });
+});
+
+describe('code map in agent guides', () => {
+  let rootDir: string;
+
+  beforeAll(async () => {
+    rootDir = await mkdtemp(join(tmpdir(), 'prelude-agents-md-'));
+    const contextDir = join(rootDir, CONTEXT_DIR);
+    await ensureDir(contextDir);
+    await writeJSON(join(contextDir, CONTEXT_FILES.PROJECT), { name: 'map-project', description: 'Has a map' });
+    await writeJSON(join(contextDir, CONTEXT_FILES.ARCHITECTURE), {
+      type: 'cli',
+      directories: [{ path: 'src/core', purpose: 'Core business logic' }],
+    });
+  });
+
+  afterAll(async () => {
+    await rm(rootDir, { recursive: true, force: true });
+  });
+
+  it('uses Key Directories when there is no map', async () => {
+    const content = await exportToClaudeMd(rootDir);
+    expect(content).toContain('**Key Directories:**');
+    expect(content).not.toContain('**Read first:**');
+  });
+
+  it('uses the map when present, and writes AGENTS.md', async () => {
+    await writeJSON(join(rootDir, CONTEXT_DIR, CONTEXT_FILES.MAP), {
+      $schema: 'https://adjective.us/prelude/schemas/v1/map.schema.json',
+      version: '1.0.0',
+      stats: { files: 2, modules: 1, edges: 1, unresolvedImports: 0 },
+      modules: [{
+        path: 'src/core',
+        purpose: 'Core business logic',
+        fileCount: 2,
+        files: [
+          { file: 'src/core/a.ts', lang: 'ts', lines: 10, exports: ['alpha', 'beta', 'gamma'], importedBy: 1, rank: 1 },
+          { file: 'src/core/b.ts', lang: 'ts', lines: 10, imports: ['src/core/a.ts'] },
+        ],
+      }],
+      hubs: [{ file: 'src/core/a.ts', importedBy: 1, rank: 1 }],
+    });
+
+    const claude = await exportToClaudeMd(rootDir);
+    expect(claude).toContain('**Read first:** `src/core/a.ts`');
+    expect(claude).toContain('- `src/core/` — Core business logic. Key files: a.ts (alpha, beta), b.ts');
+    expect(claude).not.toContain('**Key Directories:**');
+
+    const path = await saveExport(rootDir, 'agents-md');
+    expect(path.endsWith('AGENTS.md')).toBe(true);
+    const agents = await readFile(path, 'utf-8');
+    expect(agents.startsWith('# AGENTS.md')).toBe(true);
+    expect(agents).toContain('**Modules:**');
+
+    const md = await exportToMarkdown(rootDir);
+    expect(md).toContain('## 🗺️ Code Map');
   });
 });

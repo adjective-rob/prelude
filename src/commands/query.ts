@@ -9,7 +9,7 @@ export function registerQueryCommand(cli: CAC) {
   cli
     .command('query [topic]', 'Query project context by topic, scope, or type')
     .option('--scope <path>', 'Filter results to a specific directory scope')
-    .option('--type <type>', 'Filter by context type (project, stack, architecture, constraints, decisions)')
+    .option('--type <type>', 'Filter by context type (project, stack, architecture, constraints, decisions, map)')
     .option('--format <format>', 'Output format (md or json)', { default: 'md' })
     .option('--max-tokens <n>', 'Limit output to approximate token budget')
     .action(async (

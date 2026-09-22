@@ -1,7 +1,8 @@
 import { join } from 'path';
 import { readJSON, fileExists } from '../utils/fs.js';
 import { CONTEXT_FILES } from '../constants.js';
-import type { Project, Stack, Architecture, Constraints, Decisions } from '../schema/index.js';
+import type { Project, Stack, Architecture, Constraints, Decisions, CodeMap } from '../schema/index.js';
+import { filterMapByTopic, filterMapByScope, formatMapSection, formatCompactMap } from './map-format.js';
 import { resolveContextDir } from '../runtime/context.js';
 
 // Roughly estimate tokens (1 token ≈ 4 characters for English text)
@@ -15,9 +16,12 @@ function truncateToTokenBudget(text: string, maxTokens: number): string {
   return text.slice(0, maxChars) + '\n\n[... truncated to fit token budget]';
 }
 
-export type ContextType = 'project' | 'stack' | 'architecture' | 'constraints' | 'decisions';
+export type ContextType = 'project' | 'stack' | 'architecture' | 'constraints' | 'decisions' | 'map';
 
-export const VALID_TYPES: ContextType[] = ['project', 'stack', 'architecture', 'constraints', 'decisions'];
+// Order is priority order: compact output is truncated from the tail, so the
+// map (largest, degrades gracefully when cut) goes last and constraints
+// (rules the agent must obey) are never the section that gets dropped.
+export const VALID_TYPES: ContextType[] = ['project', 'stack', 'architecture', 'constraints', 'decisions', 'map'];
 
 interface ContextData {
   project?: Project;
@@ -25,6 +29,7 @@ interface ContextData {
   architecture?: Architecture;
   constraints?: Constraints;
   decisions?: Decisions;
+  map?: CodeMap;
 }
 
 export interface QueryOptions {
@@ -52,6 +57,7 @@ async function loadContext(rootDir: string): Promise<ContextData> {
     { key: 'architecture', file: CONTEXT_FILES.ARCHITECTURE },
     { key: 'constraints', file: CONTEXT_FILES.CONSTRAINTS },
     { key: 'decisions', file: CONTEXT_FILES.DECISIONS },
+    { key: 'map', file: CONTEXT_FILES.MAP },
   ];
 
   for (const { key, file } of loaders) {
@@ -169,6 +175,9 @@ function formatAsMarkdown(sections: Record<string, unknown>): string {
   }
   if (sections.decisions) {
     md += formatDecisionsSection(sections.decisions as Partial<Decisions>);
+  }
+  if (sections.map) {
+    md += formatMapSection(sections.map as CodeMap);
   }
 
   if (md === '# Prelude Query Results\n\n') {
@@ -371,6 +380,46 @@ function cleanMetadata(obj: unknown): unknown {
   return cleaned;
 }
 
+// Apply topic and scope filters to one context type. Returns undefined when
+// nothing is left.
+function selectSection(data: ContextData, type: ContextType, topic: string | undefined, scope: string | undefined): unknown {
+  const raw = data[type];
+  if (!raw) return undefined;
+
+  if (type === 'map') {
+    // Deep keyword matching would return the whole modules array on any hit
+    let map: CodeMap | undefined = raw as CodeMap;
+    if (topic) map = filterMapByTopic(map, topic);
+    if (map && scope) map = filterMapByScope(map, scope);
+    return map && map.modules.length > 0 ? map : undefined;
+  }
+
+  let section: unknown;
+  if (topic) {
+    // Topic-based filtering: extract only matching fields
+    const matches = extractMatchingFields(raw as Record<string, unknown>, topic);
+    if (Object.keys(matches).length > 0) {
+      section = matches;
+    }
+  } else {
+    section = raw;
+  }
+
+  // Apply scope filtering for architecture and constraints
+  if (scope && section) {
+    if (type === 'architecture') {
+      section = filterArchitectureByScope(section as Architecture, scope);
+    } else if (type === 'constraints') {
+      section = filterConstraintsByScope(section as Constraints, scope);
+    }
+  }
+
+  if (section && Object.keys(section as Record<string, unknown>).length > 0) {
+    return section;
+  }
+  return undefined;
+}
+
 export async function executeQuery(rootDir: string, options: QueryOptions): Promise<{ output: string; tokenEstimate: number }> {
   const data = await loadContext(rootDir);
   const sections: Record<string, unknown> = {};
@@ -382,33 +431,8 @@ export async function executeQuery(rootDir: string, options: QueryOptions): Prom
     : VALID_TYPES;
 
   for (const type of typesToInclude) {
-    const raw = data[type];
-    if (!raw) continue;
-
-    let section: unknown;
-
-    if (topic) {
-      // Topic-based filtering: extract only matching fields
-      const matches = extractMatchingFields(raw as Record<string, unknown>, topic);
-      if (Object.keys(matches).length > 0) {
-        section = matches;
-      }
-    } else {
-      section = raw;
-    }
-
-    // Apply scope filtering for architecture and constraints
-    if (options.scope && section) {
-      if (type === 'architecture') {
-        section = filterArchitectureByScope(section as Architecture, options.scope);
-      } else if (type === 'constraints') {
-        section = filterConstraintsByScope(section as Constraints, options.scope);
-      }
-    }
-
-    if (section && Object.keys(section as Record<string, unknown>).length > 0) {
-      sections[type] = section;
-    }
+    const section = selectSection(data, type, topic, options.scope);
+    if (section) sections[type] = section;
   }
 
   // Format output
@@ -563,7 +587,7 @@ function formatCompactHistory(entries: any[], topic?: string): string {
   return `[history] ${parts.join(' ; ')}`;
 }
 
-function formatCompactSection(type: string, data: unknown): string {
+function formatCompactSection(type: string, data: unknown, topic?: string): string {
   const obj = data as Record<string, unknown>;
   switch (type) {
     case 'project': return formatCompactProject(obj);
@@ -571,6 +595,7 @@ function formatCompactSection(type: string, data: unknown): string {
     case 'architecture': return formatCompactArchitecture(obj);
     case 'constraints': return formatCompactConstraints(obj);
     case 'decisions': return formatCompactDecisions(obj);
+    case 'map': return formatCompactMap(data as CodeMap, topic);
     default: return '';
   }
 }
@@ -584,36 +609,13 @@ export async function exportCompact(
   const topic = options.topic?.toLowerCase();
 
   for (const type of VALID_TYPES) {
-    const raw = data[type];
-    if (!raw) continue;
-
-    let section: unknown;
-
-    if (topic) {
-      const matches = extractMatchingFields(raw as Record<string, unknown>, topic);
-      if (Object.keys(matches).length > 0) {
-        section = matches;
-      }
-    } else {
-      section = raw;
-    }
-
-    if (options.scope && section) {
-      if (type === 'architecture') {
-        section = filterArchitectureByScope(section as Architecture, options.scope);
-      } else if (type === 'constraints') {
-        section = filterConstraintsByScope(section as Constraints, options.scope);
-      }
-    }
-
-    if (section && Object.keys(section as Record<string, unknown>).length > 0) {
-      sections[type] = section;
-    }
+    const section = selectSection(data, type, topic, options.scope);
+    if (section) sections[type] = section;
   }
 
   const lines: string[] = [];
   for (const [type, sectionData] of Object.entries(sections)) {
-    const line = formatCompactSection(type, sectionData);
+    const line = formatCompactSection(type, sectionData, topic);
     if (line) lines.push(line);
   }
 

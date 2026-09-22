@@ -161,6 +161,7 @@ export function createPreludeServer(rootDir: string): McpServer {
         architecture: CONTEXT_FILES.ARCHITECTURE,
         constraints: CONTEXT_FILES.CONSTRAINTS,
         decisions: CONTEXT_FILES.DECISIONS,
+        map: CONTEXT_FILES.MAP,
       };
 
       const filename = fileMap[typeStr];

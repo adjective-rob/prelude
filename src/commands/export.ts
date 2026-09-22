@@ -4,7 +4,7 @@ import { spawn, execSync } from 'child_process';
 import { platform } from 'os';
 import { fileExists } from '../utils/fs.js';
 import { logger, spinner } from '../utils/log.js';
-import { saveExport } from '../core/exporter.js';
+import { saveExport, type ExportFormat } from '../core/exporter.js';
 import { resolveContextDir } from '../runtime/context.js';
 
 // Check if a command exists
@@ -74,7 +74,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
 export function registerExportCommand(cli: CAC) {
   cli
     .command('export [dir]', 'Generate LLM-optimized export')
-    .option('--format <format>', 'Output format: md, json, claude-md, cursorrules', { default: 'md' })
+    .option('--format <format>', 'Output format: md, json, claude-md, agents-md, cursorrules', { default: 'md' })
     .option('--no-copy', 'Skip copying to clipboard')
     .option('--print', 'Print to stdout after export')
     .action(async (dir: string = process.cwd(), options: {
@@ -94,13 +94,13 @@ export function registerExportCommand(cli: CAC) {
 
       logger.export('Exporting context...');
 
-      const validFormats = ['md', 'json', 'claude-md', 'cursorrules'];
+      const validFormats = ['md', 'json', 'claude-md', 'agents-md', 'cursorrules'];
       const format = validFormats.includes(options.format) ? options.format : 'md';
-      const formatLabel = format === 'claude-md' ? 'CLAUDE.md' : format === 'cursorrules' ? '.cursorrules' : format.toUpperCase();
+      const formatLabel = format === 'claude-md' ? 'CLAUDE.md' : format === 'agents-md' ? 'AGENTS.md' : format === 'cursorrules' ? '.cursorrules' : format.toUpperCase();
       const spin = spinner(`Generating ${formatLabel} export...`);
       
       try {
-        const exportPath = await saveExport(rootDir, format as any);
+        const exportPath = await saveExport(rootDir, format as ExportFormat);
         spin.stop();
         
         logger.success(`✓ Export generated: ${exportPath}`);

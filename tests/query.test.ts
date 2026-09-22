@@ -432,3 +432,101 @@ describe('exportCompact session history', () => {
     expect(output).not.toContain('[history]');
   });
 });
+
+describe('map section', () => {
+  const MAP_DIR = join(tmpdir(), 'prelude-query-map-' + Date.now());
+  const MAP_CONTEXT = join(MAP_DIR, '.context');
+  const f = (file: string, extra: Record<string, unknown> = {}) => ({ file, lang: 'ts', lines: 50, ...extra });
+  const mapFixture = {
+    $schema: 'https://adjective.us/prelude/schemas/v1/map.schema.json',
+    version: '1.0.0',
+    stats: { files: 6, modules: 4, edges: 5, unresolvedImports: 0 },
+    modules: [
+      {
+        path: 'src/commands',
+        purpose: 'Command handlers',
+        fileCount: 2,
+        files: [
+          f('src/commands/init.ts', { exports: ['registerInitCommand'] }),
+          f('src/commands/update.ts', { exports: ['update'] }),
+        ],
+        dependsOn: ['src/core'],
+      },
+      {
+        path: 'src/core',
+        purpose: 'Core business logic',
+        fileCount: 2,
+        files: [
+          f('src/core/merger.ts', { exports: ['ContextMerger'], importedBy: 1, rank: 0.5 }),
+          f('src/core/infer.ts', { exports: ['inferStack', 'inferArchitecture'], importedBy: 2, rank: 1 }),
+        ],
+        dependedOnBy: ['src/commands'],
+        tests: ['tests/merge.test.ts'],
+      },
+      {
+        path: 'src/utils',
+        purpose: 'Utility functions',
+        fileCount: 1,
+        files: [f('src/utils/fs.ts', { exports: ['readJSON'], importedBy: 2, rank: 1 })],
+      },
+      {
+        path: 'tests',
+        purpose: 'Tests',
+        fileCount: 1,
+        files: [f('tests/merge.test.ts', { isTest: true })],
+      },
+    ],
+    hubs: [
+      { file: 'src/core/infer.ts', importedBy: 2, rank: 1, exports: ['inferStack'] },
+      { file: 'src/utils/fs.ts', importedBy: 2, rank: 1, exports: ['readJSON'] },
+      { file: 'src/core/merger.ts', importedBy: 1, rank: 0.5 },
+    ],
+  };
+
+  beforeEach(async () => {
+    await mkdir(MAP_CONTEXT, { recursive: true });
+    await writeFile(join(MAP_CONTEXT, 'project.json'), JSON.stringify(fixtures.project));
+    await writeFile(join(MAP_CONTEXT, 'map.json'), JSON.stringify(mapFixture));
+  });
+
+  afterEach(async () => {
+    await rm(MAP_DIR, { recursive: true, force: true });
+  });
+
+  it('returns the map section for type=map', async () => {
+    const { output } = await executeQuery(MAP_DIR, { type: 'map', format: 'md' });
+    expect(output).toContain('## Code Map');
+    expect(output).toContain('**Read first:**');
+    expect(output).toContain('### `src/core` — Core business logic');
+    expect(output).toContain('`infer.ts` (rank 1, 50 lines) — inferStack, inferArchitecture');
+  });
+
+  it('filters by topic to matching modules and files', async () => {
+    const { output } = await executeQuery(MAP_DIR, { type: 'map', topic: 'merger', format: 'json' });
+    const map = JSON.parse(output).map;
+    expect(map.modules.map((m: { path: string }) => m.path)).toEqual(['src/core']);
+    expect(map.modules[0].files.map((x: { file: string }) => x.file)).toEqual(['src/core/merger.ts']);
+    expect(map.hubs.map((h: { file: string }) => h.file)).toEqual(['src/core/merger.ts']);
+  });
+
+  it('filters by scope', async () => {
+    const { output } = await executeQuery(MAP_DIR, { type: 'map', scope: 'src/core', format: 'json' });
+    const map = JSON.parse(output).map;
+    expect(map.modules.map((m: { path: string }) => m.path)).toEqual(['src/core']);
+    expect(map.hubs.map((h: { file: string }) => h.file)).toEqual(['src/core/infer.ts', 'src/core/merger.ts']);
+  });
+
+  it('emits one [map] line in compact output and skips test-only modules', async () => {
+    const { output } = await exportCompact(MAP_DIR, {});
+    const mapLines = output.split('\n').filter(l => l.startsWith('[map]'));
+    expect(mapLines).toHaveLength(1);
+    expect(mapLines[0]).toMatch(/^\[map\] hubs: src\/core\/infer\.ts\(2\), src\/utils\/fs\.ts\(2\)/);
+    expect(mapLines[0]).toContain('src/core (Core business logic): infer.ts, merger.ts');
+    expect(mapLines[0]).not.toContain('tests (Tests)');
+  });
+
+  it('includes test-only modules when the topic mentions tests', async () => {
+    const { output } = await exportCompact(MAP_DIR, { topic: 'test' });
+    expect(output).toContain('tests (Tests)');
+  });
+});
