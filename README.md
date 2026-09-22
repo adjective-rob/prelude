@@ -9,6 +9,41 @@ Prelude transforms your codebase into structured, AI-optimized context that make
 
 ---
 
+## Multi-project workspace
+
+Register each codebase once, register Prelude once in your agent harness, and every agent session on the machine can see all of your projects: what each one is, how they relate, and where to look inside any of them.
+
+Once per repo:
+
+```bash
+cd ~/code/backend  && prelude init && prelude workspace add .
+cd ~/code/frontend && prelude init && prelude workspace add .
+```
+
+Once per machine:
+
+```bash
+prelude mcp-config --workspace --client claude-code
+# prints:  claude mcp add --scope user prelude -- prelude serve --workspace
+```
+
+Then, from any agent session:
+
+| Agent call | What it gets back |
+|---|---|
+| `prelude_projects` | One block per project: purpose, stack, entry points, API surface, hub files, related projects |
+| `prelude_compact(project="backend")` | The ~800-token overview, including the `[map]` line |
+| `prelude_locate(query="billing checkout", project="backend")` | The handful of files to read, with reasons. Omit `project` to search every project |
+| `prelude_map(project="backend", module="app/routers")` | One module's purpose, dependencies, tests, and files with exports |
+| `prelude_record_decision(project="backend", title=..., rationale=...)` | Appended to that project's `.context/decisions.json` |
+| `prelude_link_projects(from="frontend", to="backend", relation="consumes", contract="REST /api/v1, JWT bearer")` | Written to frontend's `project.json` |
+| `prelude_annotate_module(project=..., path=..., purpose=..., notes=...)` | Corrects the map; never overwritten by `prelude update` |
+| `prelude_workspace_refresh` | Rebuilds the workspace index |
+
+`prelude workspace list | index | status | remove <name>` manage the registry at `~/.prelude/` (override with `PRELUDE_HOME`). Other clients: `--client cursor`, `--client codex`, `--client claude-desktop`.
+
+---
+
 ## Why Prelude?
 
 Every time you start a new conversation with an AI assistant, you're forced to explain:
@@ -257,7 +292,7 @@ prelude mcp-config --client cursor
 
 Prelude can run as an [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server, making your project context directly available to AI tools like Claude Code, Claude Desktop, and Cursor — no copy-paste required.
 
-### Quick Setup (Claude Code)
+### Single project (Claude Code)
 
 ```bash
 # From your project directory (must have .context/ — run prelude init first)
