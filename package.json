@@ -41,7 +41,7 @@
     "cursor",
     "codebase-map"
   ],
-  "author": "Rob Murtha <rob@useadjective.com>",
+  "author": "Rob Murtha (https://adjective.us)",
   "repository": {
     "type": "git",
     "url": "https://github.com/adjective-rob/prelude.git"
