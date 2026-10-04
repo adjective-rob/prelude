@@ -2,9 +2,9 @@
   "$schema": "https://adjective.us/prelude/schemas/v1/map.schema.json",
   "version": "1.0.0",
   "stats": {
-    "files": 73,
+    "files": 76,
     "modules": 11,
-    "edges": 217,
+    "edges": 226,
     "unresolvedImports": 7
   },
   "modules": [
@@ -295,7 +295,7 @@
         {
           "file": "src/commands/update.ts",
           "lang": "ts",
-          "lines": 150,
+          "lines": 161,
           "exports": [
             "UpdateOptions",
             "update"
@@ -482,7 +482,7 @@
         {
           "file": "src/core/infer.ts",
           "lang": "ts",
-          "lines": 1698,
+          "lines": 1710,
           "exports": [
             "parsePyprojectToml",
             "extractPyDepName",
@@ -496,6 +496,7 @@
             "src/core/vocab.ts",
             "src/schema/index.ts",
             "src/utils/fs.ts",
+            "src/utils/gitignore.ts",
             "src/utils/time.ts"
           ],
           "importedBy": 4,
@@ -568,7 +569,7 @@
         {
           "file": "src/core/map-scanner.ts",
           "lang": "ts",
-          "lines": 899,
+          "lines": 903,
           "exports": [
             "isTestFile",
             "MapLang",
@@ -582,7 +583,8 @@
           "imports": [
             "src/core/source-scanner.ts",
             "src/core/vocab.ts",
-            "src/schema/index.ts"
+            "src/schema/index.ts",
+            "src/utils/gitignore.ts"
           ],
           "importedBy": 4,
           "rank": 0.17
@@ -631,7 +633,7 @@
         {
           "file": "src/core/source-scanner.ts",
           "lang": "ts",
-          "lines": 617,
+          "lines": 620,
           "exports": [
             "SourceScanResult",
             "HookInfo",
@@ -646,7 +648,8 @@
             "scanSources"
           ],
           "imports": [
-            "src/constants.ts"
+            "src/constants.ts",
+            "src/utils/gitignore.ts"
           ],
           "importedBy": 3,
           "rank": 0.13
@@ -760,10 +763,12 @@
         "src/mcp"
       ],
       "tests": [
+        "tests/architecture-type.test.ts",
         "tests/decisions.test.ts",
         "tests/diff.test.ts",
         "tests/entry-points.test.ts",
         "tests/export-formats.test.ts",
+        "tests/gitignore.test.ts",
         "tests/locate.test.ts",
         "tests/map-merge.test.ts",
         "tests/map-scanner.test.ts",
@@ -1074,12 +1079,12 @@
     {
       "path": "src/utils",
       "purpose": "Utility functions",
-      "fileCount": 4,
+      "fileCount": 5,
       "files": [
         {
           "file": "src/utils/fs.ts",
           "lang": "ts",
-          "lines": 77,
+          "lines": 84,
           "exports": [
             "readJSON",
             "writeJSON",
@@ -1091,8 +1096,23 @@
             "listFiles",
             "getDirectoryTree"
           ],
+          "imports": [
+            "src/utils/gitignore.ts"
+          ],
           "importedBy": 23,
           "rank": 1
+        },
+        {
+          "file": "src/utils/gitignore.ts",
+          "lang": "ts",
+          "lines": 112,
+          "exports": [
+            "IgnoreFn",
+            "parseGitignore",
+            "loadGitignore"
+          ],
+          "importedBy": 4,
+          "rank": 0.17
         },
         {
           "file": "src/utils/log.ts",
@@ -1137,14 +1157,24 @@
         "src/mcp"
       ],
       "tests": [
-        "tests/export-formats.test.ts"
+        "tests/export-formats.test.ts",
+        "tests/gitignore.test.ts"
       ]
     },
     {
       "path": "tests",
       "purpose": "Tests",
-      "fileCount": 17,
+      "fileCount": 19,
       "files": [
+        {
+          "file": "tests/architecture-type.test.ts",
+          "lang": "ts",
+          "lines": 45,
+          "imports": [
+            "src/core/infer.ts"
+          ],
+          "isTest": true
+        },
         {
           "file": "tests/context-dir.test.ts",
           "lang": "ts",
@@ -1166,10 +1196,11 @@
         {
           "file": "tests/diff.test.ts",
           "lang": "ts",
-          "lines": 84,
+          "lines": 97,
           "imports": [
             "src/commands/diff.ts",
             "src/commands/init.ts",
+            "src/commands/update.ts",
             "src/constants.ts",
             "src/core/diff.ts",
             "src/core/map-annotate.ts"
@@ -1194,6 +1225,17 @@
             "src/constants.ts",
             "src/core/exporter.ts",
             "src/utils/fs.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/gitignore.test.ts",
+          "lang": "ts",
+          "lines": 89,
+          "imports": [
+            "src/core/infer.ts",
+            "src/core/map-scanner.ts",
+            "src/utils/gitignore.ts"
           ],
           "isTest": true
         },
@@ -1412,6 +1454,16 @@
       ]
     },
     {
+      "file": "src/utils/gitignore.ts",
+      "importedBy": 4,
+      "rank": 0.17,
+      "exports": [
+        "IgnoreFn",
+        "parseGitignore",
+        "loadGitignore"
+      ]
+    },
+    {
       "file": "src/utils/time.ts",
       "importedBy": 4,
       "rank": 0.17,
@@ -1466,18 +1518,6 @@
         "length",
         "filterMapByTopic",
         "filterMapByScope"
-      ]
-    },
-    {
-      "file": "src/core/query-engine.ts",
-      "importedBy": 3,
-      "rank": 0.13,
-      "exports": [
-        "estimateTokens",
-        "truncateToTokenBudget",
-        "ContextType",
-        "VALID_TYPES",
-        "QueryOptions"
       ]
     }
   ]

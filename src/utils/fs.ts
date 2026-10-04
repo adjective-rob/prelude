@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir, access, readdir, stat } from 'fs/promises';
-import { dirname, join } from 'path';
+import { dirname, join, relative } from 'path';
 import { constants } from 'fs';
+import type { IgnoreFn } from './gitignore.js';
 
 export async function readJSON<T>(path: string): Promise<T> {
   const content = await readFile(path, 'utf-8');
@@ -56,7 +57,12 @@ const TREE_SKIP_DIRS = new Set([
   'node_modules', '__pycache__', 'venv', 'target', 'vendor', 'dist', 'coverage',
 ]);
 
-export async function getDirectoryTree(rootDir: string, maxDepth: number = 2, currentDepth: number = 0): Promise<string[]> {
+export async function getDirectoryTree(
+  rootDir: string,
+  maxDepth: number = 2,
+  currentDepth: number = 0,
+  gitignore?: { root: string; ignore: IgnoreFn }
+): Promise<string[]> {
   if (currentDepth >= maxDepth) return [];
   
   const dirs: string[] = [];
@@ -66,9 +72,10 @@ export async function getDirectoryTree(rootDir: string, maxDepth: number = 2, cu
     if (entry.isDirectory() && !entry.name.startsWith('.') && !TREE_SKIP_DIRS.has(entry.name) &&
         !entry.name.endsWith('.egg-info')) {
       const fullPath = join(rootDir, entry.name);
+      if (gitignore?.ignore(relative(gitignore.root, fullPath), true)) continue;
       dirs.push(fullPath);
       
-      const subDirs = await getDirectoryTree(fullPath, maxDepth, currentDepth + 1);
+      const subDirs = await getDirectoryTree(fullPath, maxDepth, currentDepth + 1, gitignore);
       dirs.push(...subDirs);
     }
   }

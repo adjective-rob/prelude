@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Scanning honours the project's root `.gitignore`: ignored files and directories no longer appear in `map.json` or `architecture.json`. Projects that had ignored source directories on disk will see them drop out on the next `prelude update`.
+
+### Fixed
+
+- `prelude update` no longer rewrites `state.json` timestamps (or anything else) when there is nothing to update.
+- A published Node package with `exports` and no `bin` is classified as `library` even when its source has a `pages/` or `app/` directory. Previously a web framework such as hono came out as `frontend`.
+- Author metadata corrected.
+
 ## 1.10.0 — 2026-10-04
 
 `locate` now finds files at least as well as a ranked grep, and returns what grep cannot.

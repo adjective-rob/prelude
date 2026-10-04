@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'fs/promises';
 import { join, basename, relative } from 'path';
 import { fileExists, readJSON, getDirectoryTree } from '../utils/fs.js';
+import { loadGitignore } from '../utils/gitignore.js';
 import { getCurrentTimestamp } from '../utils/time.js';
 import type { Project, Stack, Architecture, Constraints } from '../schema/index.js';
 import { scanSources } from './source-scanner.js';
@@ -1062,7 +1063,7 @@ export async function inferArchitecture(rootDir: string): Promise<Architecture> 
   };
   
   // Get directory structure
-  const dirs = await getDirectoryTree(rootDir, 3); // Increased depth to 3
+  const dirs = await getDirectoryTree(rootDir, 3, 0, { root: rootDir, ignore: await loadGitignore(rootDir) });
   const relativeDirs = dirs.map(dir => relative(rootDir, dir));
   
   // Count files in each directory
@@ -1235,6 +1236,17 @@ export async function inferArchitecture(rootDir: string): Promise<Architecture> 
   // Library signals
   if (hasLib && !hasApp && !hasPages) typeScores.library += 5;
   if (hasRustLib && !hasRustBin) typeScores.library += 8;
+
+  // A published Node package with no executable is a library, even when its
+  // source has a pages/ or app/ directory (a framework that ships a JSX runtime).
+  try {
+    const pkgPath = join(rootDir, 'package.json');
+    if (await fileExists(pkgPath)) {
+      const pkg = await readJSON<any>(pkgPath);
+      const isPublishedShape = Boolean(pkg.exports || (pkg.main && (pkg.files || pkg.types || pkg.module)));
+      if (isPublishedShape && !pkg.bin && pkg.private !== true) typeScores.library += 7;
+    }
+  } catch {}
 
   // Frontend signals
   if (hasPages || (hasApp && !hasSrc && !hasServices)) typeScores.frontend += 5;

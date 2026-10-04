@@ -3,7 +3,7 @@ import { join } from 'path';
 import { StateManager } from '../core/state-manager.js';
 import { trackMapFields } from '../core/merger.js';
 import { computeDiff, formatChanges } from '../core/diff.js';
-import { writeJSON } from '../utils/fs.js';
+import { readJSON, writeJSON } from '../utils/fs.js';
 import { logger } from '../utils/log.js';
 import { resolveContextDir } from '../runtime/context.js';
 import { CONTEXT_FILES } from '../constants.js';
@@ -50,11 +50,22 @@ export async function update(options: UpdateOptions = {}) {
     }
 
     if (!options.force && diff.drift.length === 0) {
-      // Rank/export churn is not drift, but keep map.json current
+      // Rank/export churn is not drift, but keep map.json current. When the
+      // map is byte-for-byte what is already on disk, write nothing at all so
+      // a no-op update leaves no diff (state.json timestamps included).
       if (!options.dryRun && merged.map && inferred.map) {
-        await writeJSON(join(contextDir, CONTEXT_FILES.MAP), merged.map);
-        trackMapFields(stateManager, merged.map, inferred.map);
-        stateManager.save();
+        const mapPath = join(contextDir, CONTEXT_FILES.MAP);
+        let onDisk: string | undefined;
+        try {
+          onDisk = JSON.stringify(await readJSON(mapPath));
+        } catch {
+          // Missing or unreadable map: fall through and write it
+        }
+        if (onDisk !== JSON.stringify(merged.map)) {
+          await writeJSON(mapPath, merged.map);
+          trackMapFields(stateManager, merged.map, inferred.map);
+          stateManager.save();
+        }
       }
       logger.success('Context is up to date, no changes needed');
       return;

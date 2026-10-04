@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from 'fs/promises';
 import { join, relative, basename, dirname, extname } from 'path';
 import { IGNORE_PATTERNS } from '../constants.js';
+import { loadGitignore } from '../utils/gitignore.js';
 
 // --- Exported interfaces ---
 
@@ -104,6 +105,7 @@ export function isTestFile(file: string): boolean {
 
 async function collectSourceFiles(rootDir: string): Promise<string[]> {
   const files: string[] = [];
+  const ignored = await loadGitignore(rootDir);
 
   async function walk(dir: string, depth: number): Promise<void> {
     if (depth > 8) return;
@@ -119,7 +121,8 @@ async function collectSourceFiles(rootDir: string): Promise<string[]> {
       const fullPath = join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.') && !entry.name.endsWith('.egg-info')) {
+        if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.') && !entry.name.endsWith('.egg-info') &&
+            !ignored(relative(rootDir, fullPath), true)) {
           await walk(fullPath, depth + 1);
         }
       } else if (entry.isFile()) {
@@ -127,7 +130,7 @@ async function collectSourceFiles(rootDir: string): Promise<string[]> {
         if (SOURCE_EXTENSIONS.has(ext)) {
           const rel = relative(rootDir, fullPath);
           // matchesIgnorePattern's glob stripping cannot express `*.test.*`
-          if (!matchesIgnorePattern(rel) && !isTestFile(rel)) {
+          if (!matchesIgnorePattern(rel) && !isTestFile(rel) && !ignored(rel, false)) {
             files.push(rel);
           }
         }

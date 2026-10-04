@@ -412,6 +412,8 @@ The format itself is language-agnostic. Adding a language to the scanner is a co
 
 ## FAQ
 
+**Does it respect `.gitignore`?** Yes, the root `.gitignore`. Ignored files and directories stay out of the map and the architecture. Nested `.gitignore` files are not read yet.
+
 **Should I commit `.context/`?** Yes. It is project documentation that happens to be machine-readable. Gitignore only `.context/*.session.json`.
 
 **How often should I run `prelude update`?** After adding dependencies or restructuring. The GitHub Action does it for you and the guard mode tells you when you forgot.
@@ -424,7 +426,6 @@ The format itself is language-agnostic. Adding a language to the scanner is a co
 
 ## Roadmap
 
-- [ ] gitignore-aware file walking
 - [ ] Graph-weighted ranking for `locate`
 - [ ] An end-to-end benchmark: tokens and tool calls an agent needs to finish a task, with and without Prelude
 - [ ] More languages in the code map

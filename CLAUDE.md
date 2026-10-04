@@ -47,7 +47,7 @@ src/runtime/
   home.ts                   resolvePreludeHome() — $PRELUDE_HOME or ~/.prelude
 src/schema/                 Zod schemas defining the .context/ file types (incl. map.ts, workspace.ts)
 schemas/                    JSON Schema files (published to adjective.us, used for validation)
-src/utils/                  fs helpers, logging, timestamps, package version
+src/utils/                  fs helpers, logging, timestamps, package version, gitignore.ts (root .gitignore matcher used by every walker)
 src/constants.ts            File names, watch patterns, ignore patterns
 bench/locate-bench.ts       Retrieval benchmark for locate: git history as queries, ranked grep as baseline (run with tsx)
 ```

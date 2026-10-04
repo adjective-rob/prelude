@@ -2,6 +2,7 @@ import { readdir, readFile, stat } from 'fs/promises';
 import { join, extname, basename, posix } from 'path';
 import type { Architecture, MapLang, MapFile, MapModule, MapHub, CodeMap } from '../schema/index.js';
 import { SKIP_DIRS, SOURCE_EXTENSIONS, isTestFile } from './source-scanner.js';
+import { loadGitignore } from '../utils/gitignore.js';
 
 export { isTestFile };
 import { inferDirectoryPurpose } from './vocab.js';
@@ -52,6 +53,7 @@ const LANG_BY_EXT: Record<string, MapLang> = {
 async function walkSourceFiles(rootDir: string, maxFiles: number): Promise<{ files: string[]; truncated: boolean }> {
   const files: string[] = [];
   let truncated = false;
+  const ignored = await loadGitignore(rootDir);
 
   async function walk(dir: string, rel: string, depth: number): Promise<void> {
     if (depth > 8 || truncated) return;
@@ -69,8 +71,10 @@ async function walkSourceFiles(rootDir: string, maxFiles: number): Promise<{ fil
       const relPath = rel ? `${rel}/${entry.name}` : entry.name;
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name) || entry.name.startsWith('.') || entry.name.endsWith('.egg-info')) continue;
+        if (ignored(relPath, true)) continue;
         await walk(join(dir, entry.name), relPath, depth + 1);
       } else if (entry.isFile() && SOURCE_EXTENSIONS.has(extname(entry.name)) && LANG_BY_EXT[extname(entry.name)]) {
+        if (ignored(relPath, false)) continue;
         if (files.length >= maxFiles) {
           truncated = true;
           return;

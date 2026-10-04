@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtemp, rm, writeFile, mkdir } from 'fs/promises';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { mkdtemp, rm, writeFile, mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { initContext } from '../src/commands/init.js';
 import { computeDiff, formatChanges, type ContextChange } from '../src/core/diff.js';
+import { update } from '../src/commands/update.js';
 import { annotateModule } from '../src/core/map-annotate.js';
 import { formatDiffJson, formatDiffSummary } from '../src/commands/diff.js';
 import { CONTEXT_DIR } from '../src/constants.js';
@@ -28,6 +29,18 @@ describe('computeDiff', () => {
   it('reports no drift right after init', async () => {
     const diff = await computeDiff(rootDir);
     expect(diff.drift).toEqual([]);
+  });
+
+  it('update writes nothing when there is nothing to update', async () => {
+    const files = ['map.json', 'project.json', join('.prelude', 'state.json')].map(f => join(rootDir, CONTEXT_DIR, f));
+    const before = await Promise.all(files.map(f => readFile(f, 'utf-8')));
+    const cwd = vi.spyOn(process, 'cwd').mockReturnValue(rootDir);
+    try {
+      await update({ silent: true });
+    } finally {
+      cwd.mockRestore();
+    }
+    expect(await Promise.all(files.map(f => readFile(f, 'utf-8')))).toEqual(before);
   });
 
   it('reports a hand-edited purpose as preserved, not drift', async () => {
