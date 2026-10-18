@@ -1,0 +1,60 @@
+# Publish to npm with provenance when a version tag is pushed.
+# Uses npm trusted publishing (OIDC), so no npm token is stored in the repo:
+# configure it once at npmjs.com → prelude-context → Settings → Trusted
+# Publisher (GitHub Actions, adjective-rob/prelude, workflow release.yml).
+
+name: Release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: pnpm
+          registry-url: "https://registry.npmjs.org"
+
+      # Trusted publishing needs npm >= 11.5.1
+      - name: Update npm
+        run: npm install -g npm@11
+
+      - name: Check tag matches package.json
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "Tag $TAG does not match package.json version $VERSION" >&2
+            exit 1
+          fi
+
+      - name: Install, lint, build, test
+        run: |
+          pnpm install --frozen-lockfile
+          node_modules/.bin/eslint .
+          node_modules/.bin/tsc
+          node_modules/.bin/vitest run
+          node dist/bin/prelude.js diff --check
+
+      - name: Publish
+        run: npm publish --provenance --access public

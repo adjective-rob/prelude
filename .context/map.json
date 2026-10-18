@@ -2,9 +2,9 @@
   "$schema": "https://adjective.us/prelude/schemas/v1/map.schema.json",
   "version": "1.0.0",
   "stats": {
-    "files": 78,
+    "files": 84,
     "modules": 11,
-    "edges": 229,
+    "edges": 244,
     "unresolvedImports": 7
   },
   "modules": [
@@ -47,13 +47,15 @@
         {
           "file": "bin/prelude.ts",
           "lang": "ts",
-          "lines": 55,
+          "lines": 59,
           "imports": [
             "src/commands/annotate.ts",
             "src/commands/compact.ts",
             "src/commands/decision.ts",
             "src/commands/diff.ts",
             "src/commands/export.ts",
+            "src/commands/history.ts",
+            "src/commands/hook.ts",
             "src/commands/init.ts",
             "src/commands/locate.ts",
             "src/commands/mcp-config.ts",
@@ -90,7 +92,7 @@
             "IGNORE_PATTERNS"
           ],
           "importedBy": 17,
-          "rank": 0.74
+          "rank": 0.65
         }
       ],
       "dependedOnBy": [
@@ -108,7 +110,7 @@
     {
       "path": "src/commands",
       "purpose": "Command handlers",
-      "fileCount": 15,
+      "fileCount": 17,
       "files": [
         {
           "file": "src/commands/annotate.ts",
@@ -189,6 +191,37 @@
             "src/runtime/context.ts",
             "src/utils/clipboard.ts",
             "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/history.ts",
+          "lang": "ts",
+          "lines": 32,
+          "exports": [
+            "registerHistoryCommand"
+          ],
+          "imports": [
+            "src/core/history.ts",
+            "src/core/state-manager.ts",
+            "src/runtime/context.ts",
+            "src/utils/fs.ts",
+            "src/utils/log.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/commands/hook.ts",
+          "lang": "ts",
+          "lines": 32,
+          "exports": [
+            "registerHookCommand"
+          ],
+          "imports": [
+            "src/core/git-hook.ts",
             "src/utils/log.ts"
           ],
           "importedBy": 1,
@@ -367,7 +400,7 @@
             "src/utils/log.ts"
           ],
           "importedBy": 3,
-          "rank": 0.13
+          "rank": 0.12
         }
       ],
       "dependsOn": [
@@ -391,7 +424,7 @@
     {
       "path": "src/core",
       "purpose": "Core business logic",
-      "fileCount": 18,
+      "fileCount": 20,
       "files": [
         {
           "file": "src/core/claude-md-parser.ts",
@@ -415,7 +448,7 @@
             "src/core/query-engine.ts"
           ],
           "importedBy": 2,
-          "rank": 0.09
+          "rank": 0.08
         },
         {
           "file": "src/core/decisions.ts",
@@ -433,7 +466,7 @@
             "src/utils/time.ts"
           ],
           "importedBy": 2,
-          "rank": 0.09
+          "rank": 0.08
         },
         {
           "file": "src/core/diff.ts",
@@ -457,7 +490,7 @@
             "src/utils/fs.ts"
           ],
           "importedBy": 2,
-          "rank": 0.09
+          "rank": 0.08
         },
         {
           "file": "src/core/exporter.ts",
@@ -479,7 +512,42 @@
             "src/utils/fs.ts"
           ],
           "importedBy": 3,
-          "rank": 0.13
+          "rank": 0.12
+        },
+        {
+          "file": "src/core/git-hook.ts",
+          "lang": "ts",
+          "lines": 116,
+          "exports": [
+            "HookResult",
+            "resolvePreCommitPath",
+            "hookBlock",
+            "installHook",
+            "uninstallHook"
+          ],
+          "imports": [
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
+        },
+        {
+          "file": "src/core/history.ts",
+          "lang": "ts",
+          "lines": 87,
+          "exports": [
+            "HistoryFileChange",
+            "HistoryEntry",
+            "diffStates",
+            "listHistory",
+            "formatHistoryLine"
+          ],
+          "imports": [
+            "src/schema/state.ts",
+            "src/utils/fs.ts"
+          ],
+          "importedBy": 1,
+          "rank": 0.04
         },
         {
           "file": "src/core/infer.ts",
@@ -502,7 +570,7 @@
             "src/utils/time.ts"
           ],
           "importedBy": 4,
-          "rank": 0.17
+          "rank": 0.15
         },
         {
           "file": "src/core/locate.ts",
@@ -526,7 +594,7 @@
             "src/utils/fs.ts"
           ],
           "importedBy": 3,
-          "rank": 0.13
+          "rank": 0.12
         },
         {
           "file": "src/core/map-annotate.ts",
@@ -545,7 +613,7 @@
             "src/utils/fs.ts"
           ],
           "importedBy": 2,
-          "rank": 0.09
+          "rank": 0.08
         },
         {
           "file": "src/core/map-format.ts",
@@ -566,7 +634,7 @@
             "src/schema/index.ts"
           ],
           "importedBy": 3,
-          "rank": 0.13
+          "rank": 0.12
         },
         {
           "file": "src/core/map-scanner.ts",
@@ -589,7 +657,7 @@
             "src/utils/gitignore.ts"
           ],
           "importedBy": 4,
-          "rank": 0.17
+          "rank": 0.15
         },
         {
           "file": "src/core/merger.ts",
@@ -606,7 +674,7 @@
             "src/schema/index.ts"
           ],
           "importedBy": 4,
-          "rank": 0.17
+          "rank": 0.15
         },
         {
           "file": "src/core/query-engine.ts",
@@ -630,7 +698,7 @@
             "src/utils/fs.ts"
           ],
           "importedBy": 3,
-          "rank": 0.13
+          "rank": 0.12
         },
         {
           "file": "src/core/source-scanner.ts",
@@ -654,7 +722,7 @@
             "src/utils/gitignore.ts"
           ],
           "importedBy": 3,
-          "rank": 0.13
+          "rank": 0.12
         },
         {
           "file": "src/core/state-manager.ts",
@@ -667,8 +735,8 @@
           "imports": [
             "src/schema/state.ts"
           ],
-          "importedBy": 7,
-          "rank": 0.3
+          "importedBy": 8,
+          "rank": 0.31
         },
         {
           "file": "src/core/updater.ts",
@@ -702,7 +770,7 @@
             "inferDirectoryPurpose"
           ],
           "importedBy": 2,
-          "rank": 0.09
+          "rank": 0.08
         },
         {
           "file": "src/core/watcher.ts",
@@ -751,7 +819,7 @@
             "src/utils/fs.ts"
           ],
           "importedBy": 3,
-          "rank": 0.13
+          "rank": 0.12
         }
       ],
       "dependsOn": [
@@ -771,7 +839,9 @@
         "tests/diff.test.ts",
         "tests/entry-points.test.ts",
         "tests/export-formats.test.ts",
+        "tests/git-hook.test.ts",
         "tests/gitignore.test.ts",
+        "tests/history.test.ts",
         "tests/locate.test.ts",
         "tests/map-merge.test.ts",
         "tests/map-scanner.test.ts",
@@ -888,8 +958,8 @@
           "imports": [
             "src/constants.ts"
           ],
-          "importedBy": 20,
-          "rank": 0.87
+          "importedBy": 21,
+          "rank": 0.81
         },
         {
           "file": "src/runtime/home.ts",
@@ -901,7 +971,7 @@
             "workspaceIndexPath"
           ],
           "importedBy": 3,
-          "rank": 0.13
+          "rank": 0.12
         }
       ],
       "dependsOn": [
@@ -971,7 +1041,7 @@
             "src/schema/workspace.ts"
           ],
           "importedBy": 18,
-          "rank": 0.78
+          "rank": 0.69
         },
         {
           "file": "src/schema/map.ts",
@@ -1004,7 +1074,7 @@
             "Project"
           ],
           "importedBy": 3,
-          "rank": 0.13
+          "rank": 0.12
         },
         {
           "file": "src/schema/session.ts",
@@ -1046,8 +1116,8 @@
             "createInitialState",
             "trackField"
           ],
-          "importedBy": 1,
-          "rank": 0.04
+          "importedBy": 2,
+          "rank": 0.08
         },
         {
           "file": "src/schema/workspace.ts",
@@ -1093,7 +1163,7 @@
             "copyToClipboard"
           ],
           "importedBy": 2,
-          "rank": 0.09
+          "rank": 0.08
         },
         {
           "file": "src/utils/fs.ts",
@@ -1113,7 +1183,7 @@
           "imports": [
             "src/utils/gitignore.ts"
           ],
-          "importedBy": 23,
+          "importedBy": 26,
           "rank": 1
         },
         {
@@ -1126,7 +1196,7 @@
             "loadGitignore"
           ],
           "importedBy": 4,
-          "rank": 0.17
+          "rank": 0.15
         },
         {
           "file": "src/utils/log.ts",
@@ -1137,8 +1207,8 @@
             "logTable",
             "spinner"
           ],
-          "importedBy": 13,
-          "rank": 0.57
+          "importedBy": 15,
+          "rank": 0.58
         },
         {
           "file": "src/utils/time.ts",
@@ -1151,7 +1221,7 @@
             "generateId"
           ],
           "importedBy": 4,
-          "rank": 0.17
+          "rank": 0.15
         },
         {
           "file": "src/utils/version.ts",
@@ -1161,7 +1231,7 @@
             "getPackageVersion"
           ],
           "importedBy": 2,
-          "rank": 0.09
+          "rank": 0.08
         }
       ],
       "dependedOnBy": [
@@ -1172,13 +1242,14 @@
       ],
       "tests": [
         "tests/export-formats.test.ts",
+        "tests/git-hook.test.ts",
         "tests/gitignore.test.ts"
       ]
     },
     {
       "path": "tests",
       "purpose": "Tests",
-      "fileCount": 20,
+      "fileCount": 22,
       "files": [
         {
           "file": "tests/architecture-type.test.ts",
@@ -1243,6 +1314,16 @@
           "isTest": true
         },
         {
+          "file": "tests/git-hook.test.ts",
+          "lang": "ts",
+          "lines": 86,
+          "imports": [
+            "src/core/git-hook.ts",
+            "src/utils/fs.ts"
+          ],
+          "isTest": true
+        },
+        {
           "file": "tests/gitignore.test.ts",
           "lang": "ts",
           "lines": 89,
@@ -1250,6 +1331,15 @@
             "src/core/infer.ts",
             "src/core/map-scanner.ts",
             "src/utils/gitignore.ts"
+          ],
+          "isTest": true
+        },
+        {
+          "file": "tests/history.test.ts",
+          "lang": "ts",
+          "lines": 72,
+          "imports": [
+            "src/core/history.ts"
           ],
           "isTest": true
         },
@@ -1388,7 +1478,7 @@
   "hubs": [
     {
       "file": "src/utils/fs.ts",
-      "importedBy": 23,
+      "importedBy": 26,
       "rank": 1,
       "exports": [
         "readJSON",
@@ -1400,8 +1490,8 @@
     },
     {
       "file": "src/runtime/context.ts",
-      "importedBy": 20,
-      "rank": 0.87,
+      "importedBy": 21,
+      "rank": 0.81,
       "exports": [
         "resolveContextDir",
         "isExternalBrainMode"
@@ -1410,12 +1500,12 @@
     {
       "file": "src/schema/index.ts",
       "importedBy": 18,
-      "rank": 0.78
+      "rank": 0.69
     },
     {
       "file": "src/constants.ts",
       "importedBy": 17,
-      "rank": 0.74,
+      "rank": 0.65,
       "exports": [
         "CONTEXT_DIR",
         "CONTEXT_FILES",
@@ -1425,8 +1515,8 @@
     },
     {
       "file": "src/utils/log.ts",
-      "importedBy": 13,
-      "rank": 0.57,
+      "importedBy": 15,
+      "rank": 0.58,
       "exports": [
         "logger",
         "logTable",
@@ -1435,8 +1525,8 @@
     },
     {
       "file": "src/core/state-manager.ts",
-      "importedBy": 7,
-      "rank": 0.3,
+      "importedBy": 8,
+      "rank": 0.31,
       "exports": [
         "MAX_HISTORY",
         "StateManager"
@@ -1445,7 +1535,7 @@
     {
       "file": "src/core/infer.ts",
       "importedBy": 4,
-      "rank": 0.17,
+      "rank": 0.15,
       "exports": [
         "parsePyprojectToml",
         "extractPyDepName",
@@ -1457,7 +1547,7 @@
     {
       "file": "src/core/map-scanner.ts",
       "importedBy": 4,
-      "rank": 0.17,
+      "rank": 0.15,
       "exports": [
         "isTestFile",
         "MapLang",
@@ -1469,7 +1559,7 @@
     {
       "file": "src/core/merger.ts",
       "importedBy": 4,
-      "rank": 0.17,
+      "rank": 0.15,
       "exports": [
         "MergeResult",
         "MergeChange",
@@ -1480,7 +1570,7 @@
     {
       "file": "src/utils/gitignore.ts",
       "importedBy": 4,
-      "rank": 0.17,
+      "rank": 0.15,
       "exports": [
         "IgnoreFn",
         "parseGitignore",
@@ -1490,7 +1580,7 @@
     {
       "file": "src/utils/time.ts",
       "importedBy": 4,
-      "rank": 0.17,
+      "rank": 0.15,
       "exports": [
         "getCurrentTimestamp",
         "formatTimestamp",
@@ -1501,7 +1591,7 @@
     {
       "file": "src/commands/workspace.ts",
       "importedBy": 3,
-      "rank": 0.13,
+      "rank": 0.12,
       "exports": [
         "formatProjectListLine",
         "printWorkspaceHint",
@@ -1511,7 +1601,7 @@
     {
       "file": "src/core/exporter.ts",
       "importedBy": 3,
-      "rank": 0.13,
+      "rank": 0.12,
       "exports": [
         "exportToMarkdown",
         "exportToJSON",
@@ -1523,7 +1613,7 @@
     {
       "file": "src/core/locate.ts",
       "importedBy": 3,
-      "rank": 0.13,
+      "rank": 0.12,
       "exports": [
         "LocateHit",
         "LocateOptions",
@@ -1535,7 +1625,7 @@
     {
       "file": "src/core/map-format.ts",
       "importedBy": 3,
-      "rank": 0.13,
+      "rank": 0.12,
       "exports": [
         "topFiles",
         "relativeToModule",

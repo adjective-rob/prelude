@@ -20,7 +20,7 @@ tsx bin/prelude.ts   # Run CLI in dev mode without building
 ```
 bin/prelude.ts              CLI entry point (cac framework)
 src/commands/               Command handlers (init, export, update, query, compact, decision, watch, share,
-                            locate, annotate, diff, workspace, serve, mcp-config, validate)
+                            locate, annotate, diff, history, hook, workspace, serve, mcp-config, validate)
 src/core/                   Business logic
   infer.ts                  Static analysis — reads package.json, config files, directory structure
   source-scanner.ts         Source-level heuristics — reads actual code (regex, not AST); isTestFile()
@@ -30,12 +30,14 @@ src/core/                   Business logic
   map-annotate.ts           annotateModule(): manual module purpose/notes in map.json
   locate.ts                 Scoring over map.json + decisions + a content scan (scanContent) → the files to read for a task
   diff.ts                   computeDiff(): what prelude update would change; shared by update and diff
+  history.ts                listHistory(): field-level changes per update, from .prelude/history backups
+  git-hook.ts               installHook()/uninstallHook(): marked pre-commit block running prelude diff --check
   decisions.ts              addDecision()/listDecisions() for decisions.json
   workspace.ts              User-level workspace registry and index (~/.prelude)
   query-engine.ts           Query/filter/format engine for prelude query and prelude compact
   exporter.ts               Markdown, JSON, CLAUDE.md, AGENTS.md export generation for prelude export
   merger.ts                 Smart merge — preserves manual edits during prelude update (incl. mergeMap)
-  state-manager.ts          Tracks which fields are inferred vs manually edited
+  state-manager.ts          Tracks which fields are inferred vs manually edited; backup() keeps MAX_HISTORY snapshots
   compact.ts                Thin wrapper around query-engine's exportCompact
   updater.ts, watcher.ts    File change monitoring and incremental refresh for prelude watch
 src/mcp/                    MCP server
@@ -47,7 +49,7 @@ src/runtime/
   home.ts                   resolvePreludeHome() — $PRELUDE_HOME or ~/.prelude
 src/schema/                 Zod schemas defining the .context/ file types (incl. map.ts, workspace.ts)
 schemas/                    JSON Schema files (published to adjective.us, used for validation)
-src/utils/                  fs helpers, logging, timestamps, package version, gitignore.ts (root .gitignore matcher used by every walker)
+src/utils/                  fs helpers, logging, timestamps, package version, clipboard.ts, gitignore.ts (root .gitignore matcher used by every walker)
 src/constants.ts            File names, watch patterns, ignore patterns
 bench/locate-bench.ts       Retrieval benchmark for locate: git history as queries, ranked grep as baseline (run with tsx)
 ```

@@ -232,6 +232,8 @@ See [action.yml](./action.yml) for the inputs (`version`, `args`, `working-direc
 | `prelude init` | Analyze the project and write `.context/` |
 | `prelude update` | Re-analyze and merge, preserving manual edits |
 | `prelude diff` | Show what `update` would change, without writing |
+| `prelude history` | Show what recent updates changed |
+| `prelude hook install` | Add a git pre-commit hook that fails on drift |
 | `prelude locate <query>` | Rank the files for a task, with tests, importers, and decisions for each |
 | `prelude compact` | One dense line per section, for prompt injection |
 | `prelude query` | Filter context by topic, directory, or type |
@@ -268,7 +270,13 @@ prelude diff                # drift, grouped by file
 prelude diff --all          # also show preserved manual edits
 prelude diff --format json  # { changed, count, changes }
 prelude diff --check        # exit 1 on drift
+
+prelude history             # what each recent update changed, newest first
+prelude hook install        # pre-commit hook that runs diff --check
+prelude hook uninstall
 ```
+
+`update` keeps the state from before each of its last 10 runs in `.context/.prelude/history/`; `history` reads those backups. `hook install` adds a marked block to the repository's pre-commit hook, after the shebang of an existing hook or in `.husky/pre-commit` under husky, and skips the check on machines without `prelude` installed.
 
 ### `prelude locate <query...>`
 

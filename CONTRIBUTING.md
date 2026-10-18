@@ -79,6 +79,6 @@ Inference bugs are easiest to fix with a reproduction: the manifest file (`packa
 ## Releasing (maintainers)
 
 1. Bump `version` in `package.json` and add the `CHANGELOG.md` section.
-2. `pnpm build && pnpm exec vitest run`, then publish to npm.
-3. Tag `vX.Y.Z`, push it, and create the GitHub release from the changelog section.
+2. `pnpm build && pnpm exec vitest run`, and commit.
+3. Tag `vX.Y.Z` and push the tag. The Release workflow checks the tag matches `package.json`, runs the checks again, and publishes to npm with provenance through npm trusted publishing. Then create the GitHub release from the changelog section.
 4. Move the major tag so `uses: adjective-rob/prelude@v1` picks up the release: `git tag -f v1 vX.Y.Z && git push -f origin v1`.

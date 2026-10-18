@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+- `prelude history` lists what each recent `prelude update` changed, by file and field. `--format json` for scripts.
+- `prelude hook install` / `uninstall` manage a git pre-commit hook that runs `prelude diff --check`. It keeps an existing hook, works under husky and in subdirectory projects, and skips the check where `prelude` is not installed.
+- Releases are published from CI with npm provenance. Dependabot keeps npm packages and Actions current.
+
 ### Security
 
 - `@modelcontextprotocol/sdk` raised to 1.32.1 (GHSA-6qxp-vccf-f47h). Dev dependencies refreshed; `pnpm audit` is clean.

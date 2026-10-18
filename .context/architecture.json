@@ -22,12 +22,12 @@
     },
     {
       "path": "src/commands",
-      "fileCount": 15,
+      "fileCount": 17,
       "purpose": "Command handlers"
     },
     {
       "path": "src/core",
-      "fileCount": 18,
+      "fileCount": 20,
       "purpose": "Core business logic"
     },
     {
@@ -52,7 +52,7 @@
     },
     {
       "path": "tests",
-      "fileCount": 20,
+      "fileCount": 22,
       "purpose": "Tests"
     }
   ],
