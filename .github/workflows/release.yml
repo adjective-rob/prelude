@@ -56,5 +56,12 @@ jobs:
           node_modules/.bin/vitest run
           node dist/bin/prelude.js diff --check
 
+      # A version staged and approved by hand is already on npm; skip it
       - name: Publish
-        run: npm publish --provenance --access public
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if npm view "prelude-context@${VERSION}" version >/dev/null 2>&1; then
+            echo "prelude-context@${VERSION} is already on npm; skipping publish."
+            exit 0
+          fi
+          npm publish --provenance --access public
