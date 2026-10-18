@@ -1,9 +1,11 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
 import type { PreludeState, FileState, FieldState } from '../schema/state.js';
 import { createInitialState, trackField } from '../schema/state.js';
 
+/** Number of state backups kept in .prelude/history; older ones are pruned. */
+export const MAX_HISTORY = 10;
 
 /**
  * Manages Prelude state tracking
@@ -68,6 +70,16 @@ export class StateManager {
     const backupPath = join(historyDir, `${timestamp}.json`);
     
     writeFileSync(backupPath, JSON.stringify(this.state, null, 2));
+
+    // Timestamped names sort chronologically, so the oldest come first
+    try {
+      const backups = readdirSync(historyDir).filter(f => f.endsWith('.json')).sort();
+      for (const old of backups.slice(0, Math.max(0, backups.length - MAX_HISTORY))) {
+        unlinkSync(join(historyDir, old));
+      }
+    } catch {
+      // Pruning is best-effort
+    }
   }
 
   /**

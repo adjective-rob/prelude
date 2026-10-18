@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Security
+
+- `@modelcontextprotocol/sdk` raised to 1.32.1 (GHSA-6qxp-vccf-f47h). Dev dependencies refreshed; `pnpm audit` is clean.
+- The GitHub Action passes `version`, `args` and the base branch to its scripts through environment variables instead of interpolating them into shell, closing a script-injection path.
+
+### Changed
+
+- `prelude update` keeps the 10 newest backups in `.context/.prelude/history/` and prunes older ones. Previously the folder grew on every run.
+- `export` and `share` share one clipboard helper (`src/utils/clipboard.ts`).
+
 ## 1.11.0 — 2026-10-04
 
 ### Added

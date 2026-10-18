@@ -47,12 +47,12 @@
     },
     {
       "path": "src/utils",
-      "fileCount": 5,
+      "fileCount": 6,
       "purpose": "Utility functions"
     },
     {
       "path": "tests",
-      "fileCount": 19,
+      "fileCount": 20,
       "purpose": "Tests"
     }
   ],

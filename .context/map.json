@@ -2,9 +2,9 @@
   "$schema": "https://adjective.us/prelude/schemas/v1/map.schema.json",
   "version": "1.0.0",
   "stats": {
-    "files": 76,
+    "files": 78,
     "modules": 11,
-    "edges": 226,
+    "edges": 229,
     "unresolvedImports": 7
   },
   "modules": [
@@ -180,13 +180,14 @@
         {
           "file": "src/commands/export.ts",
           "lang": "ts",
-          "lines": 151,
+          "lines": 87,
           "exports": [
             "registerExportCommand"
           ],
           "imports": [
             "src/core/exporter.ts",
             "src/runtime/context.ts",
+            "src/utils/clipboard.ts",
             "src/utils/fs.ts",
             "src/utils/log.ts"
           ],
@@ -278,7 +279,7 @@
         {
           "file": "src/commands/share.ts",
           "lang": "ts",
-          "lines": 146,
+          "lines": 82,
           "exports": [
             "registerShareCommand"
           ],
@@ -286,6 +287,7 @@
             "src/constants.ts",
             "src/core/exporter.ts",
             "src/runtime/context.ts",
+            "src/utils/clipboard.ts",
             "src/utils/fs.ts",
             "src/utils/log.ts"
           ],
@@ -657,8 +659,9 @@
         {
           "file": "src/core/state-manager.ts",
           "lang": "ts",
-          "lines": 180,
+          "lines": 192,
           "exports": [
+            "MAX_HISTORY",
             "StateManager"
           ],
           "imports": [
@@ -778,6 +781,7 @@
         "tests/python-inference.test.ts",
         "tests/query.test.ts",
         "tests/rust-go-inference.test.ts",
+        "tests/state-history.test.ts",
         "tests/workspace.test.ts"
       ]
     },
@@ -1079,8 +1083,18 @@
     {
       "path": "src/utils",
       "purpose": "Utility functions",
-      "fileCount": 5,
+      "fileCount": 6,
       "files": [
+        {
+          "file": "src/utils/clipboard.ts",
+          "lang": "ts",
+          "lines": 66,
+          "exports": [
+            "copyToClipboard"
+          ],
+          "importedBy": 2,
+          "rank": 0.09
+        },
         {
           "file": "src/utils/fs.ts",
           "lang": "ts",
@@ -1164,7 +1178,7 @@
     {
       "path": "tests",
       "purpose": "Tests",
-      "fileCount": 19,
+      "fileCount": 20,
       "files": [
         {
           "file": "tests/architecture-type.test.ts",
@@ -1351,6 +1365,15 @@
           "isTest": true
         },
         {
+          "file": "tests/state-history.test.ts",
+          "lang": "ts",
+          "lines": 29,
+          "imports": [
+            "src/core/state-manager.ts"
+          ],
+          "isTest": true
+        },
+        {
           "file": "tests/workspace.test.ts",
           "lang": "ts",
           "lines": 143,
@@ -1415,6 +1438,7 @@
       "importedBy": 7,
       "rank": 0.3,
       "exports": [
+        "MAX_HISTORY",
         "StateManager"
       ]
     },

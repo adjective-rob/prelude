@@ -21,8 +21,7 @@ on:
       - "app/**"
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   # Fail pull requests whose committed .context/ has drifted from the code.
@@ -54,35 +53,34 @@ jobs:
   update-context:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
           node-version: "24"
+          cache: pnpm
 
-      - name: Install prelude-context
-        run: npm install -g prelude-context
+      # Build this repo's own CLI so the update matches the code just pushed
+      - name: Build prelude
+        run: pnpm install --frozen-lockfile && pnpm build
 
-      # `prelude update` refreshes timestamps in .context/.prelude/state.json
-      # even when nothing changed, so only run it when there is real drift.
-      - name: Check for drift
-        id: drift
-        run: |
-          if prelude diff --check; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
+      # A no-op update writes nothing, so the PR step below does nothing
+      # when the context is already current.
       - name: Run prelude update
-        if: steps.drift.outputs.changed == 'true'
-        run: prelude update
+        run: node dist/bin/prelude.js update
 
       - name: Create Pull Request
-        if: steps.drift.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "chore: update .context/ via Prelude"
